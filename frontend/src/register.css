@@ -1,0 +1,1 @@
+.stepper{display:flex;gap:8px;margin:12px 0 22px}.stepper i{height:6px;flex:1;border-radius:999px;background:#d7e6e3;transition:background .2s ease}.stepper i.done{background:#1c7c74}@media(prefers-reduced-motion:reduce){.stepper i{transition:none}}
