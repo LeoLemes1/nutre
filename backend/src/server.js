@@ -8,6 +8,8 @@ import { z } from 'zod';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { FOODS, FOODS_META } from './foods.js';
+import { runNutreAgent } from './agent.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const db = new DatabaseSync(path.join(__dirname, '..', 'data', 'nutre.db'));
@@ -15,8 +17,6 @@ const app = express();
 const PORT = Number(process.env.PORT || 3333);
 if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) throw new Error('JWT_SECRET é obrigatório em produção.');
 const jwtSecret = process.env.JWT_SECRET || 'desenvolvimento-apenas-troque-em-producao';
-const tokenFile = path.join(__dirname, '..', '..', 'token.txt');
-const openaiKey = process.env.OPENAI_API_KEY || (fs.existsSync(tokenFile) ? fs.readFileSync(tokenFile, 'utf8').trim() : '');
 
 db.exec('PRAGMA journal_mode = WAL;');
 db.exec(`
@@ -29,6 +29,14 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, weight REAL NOT NULL,
     height REAL NOT NULL, activity TEXT NOT NULL, bmi REAL NOT NULL, calories INTEGER NOT NULL,
     protein INTEGER NOT NULL, carbs INTEGER NOT NULL, fats INTEGER NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
+  CREATE TABLE IF NOT EXISTS chat_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    role TEXT NOT NULL,
+    text TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id)
   );
 `);
@@ -120,6 +128,24 @@ app.post('/api/auth/login', async (req, res) => {
   if (!user || !(await bcrypt.compare(String(req.body.password || ''), user.password_hash))) return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
   res.json({ token: sign(user), user: publicUser(user) });
 });
+app.post('/api/auth/forgot-check', (req, res) => {
+  const parsed = z.string().trim().email().safeParse(req.body.email);
+  if (!parsed.success) return res.status(400).json({ error: 'Digite um e-mail válido.' });
+  const user = db.prepare('SELECT id, name FROM users WHERE email=?').get(parsed.data.toLowerCase());
+  if (!user) return res.status(404).json({ error: 'Não encontramos uma conta cadastrada com este e-mail.' });
+  res.json({ ok: true, name: user.name.split(' ')[0] });
+});
+app.post('/api/auth/reset-password', async (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const password = String(req.body.password || '');
+  if (!email || !/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: 'E-mail inválido.' });
+  if (password.length < 6) return res.status(400).json({ error: 'A nova senha precisa ter pelo menos 6 caracteres.' });
+  const user = db.prepare('SELECT * FROM users WHERE email=?').get(email);
+  if (!user) return res.status(404).json({ error: 'Conta não encontrada.' });
+  const hash = await bcrypt.hash(password, 12);
+  db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(hash, user.id);
+  res.json({ ok: true, message: 'Senha redefinida com sucesso!' });
+});
 app.get('/api/me', auth, (req, res) => { const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.userId); if (!user) return res.status(401).json({ error: 'Sua sessão expirou. Entre novamente.' }); res.json({ user: publicUser(user) }); });
 
 function calculate(v, user) {
@@ -194,16 +220,74 @@ app.get('/api/ubs', auth, async (req, res) => {
   res.json({ units });
 });
 
+app.get('/api/foods', auth, (req, res) => {
+  res.json({ meta: FOODS_META, foods: FOODS });
+});
+
+app.get('/api/chat/history', auth, (req, res) => {
+  const rows = db
+    .prepare('SELECT id, role, text, created_at FROM chat_messages WHERE user_id=? ORDER BY id ASC LIMIT 60')
+    .all(req.userId);
+  res.json({ messages: rows });
+});
+
+app.delete('/api/chat/history', auth, (req, res) => {
+  db.prepare('DELETE FROM chat_messages WHERE user_id=?').run(req.userId);
+  res.json({ ok: true });
+});
+
 app.post('/api/chat', auth, async (req, res) => {
-  const message = String(req.body.message || '').trim(); if (!message) return res.status(400).json({ error: 'Escreva sua pergunta.' });
-  const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.userId); const latest = db.prepare('SELECT * FROM calculations WHERE user_id=? ORDER BY id DESC LIMIT 1').get(req.userId);
-  const context = latest ? `Último cálculo: IMC ${latest.bmi}, ${latest.calories} kcal, proteínas ${latest.protein}g, carboidratos ${latest.carbs}g, gorduras ${latest.fats}g.` : 'Ainda não há cálculo.';
-  const system = `Você é o Guia Nutrê, um assistente nutricional brasileiro acolhedor. Use linguagem simples, frases curtas e sem diagnóstico. ${context} Oriente hábitos e sugira procurar UBS/nutricionista em riscos, sintomas ou condições clínicas. Não prescreva dieta, medicamentos nem substitua atendimento.`;
-  if (!openaiKey) return res.json({ answer: 'Posso ajudar com informações gerais. Para responder com a IA, configure OPENAI_API_KEY no ambiente do servidor.' });
+  const message = String(req.body.message || '').trim();
+  if (!message) return res.status(400).json({ error: 'Escreva sua pergunta.' });
+
+  const mode = req.body.mode === 'nutrition' ? 'nutrition' : 'health';
+  const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
+  if (!user) return res.status(401).json({ error: 'Sua sessão expirou. Entre novamente.' });
+
+  const calculations = db
+    .prepare('SELECT * FROM calculations WHERE user_id=? ORDER BY id DESC LIMIT 12')
+    .all(req.userId)
+    .map((c) => ({ ...c, ...bmiClassification(c.bmi, user.age) }));
+
+  // Histórico salvo no banco ou enviado pelo cliente
+  const savedHistory = db
+    .prepare('SELECT role, text FROM chat_messages WHERE user_id=? ORDER BY id DESC LIMIT 12')
+    .all(req.userId)
+    .reverse()
+    .map((m) => ({ role: m.role, content: m.text }));
+
+  const clientHistory = Array.isArray(req.body.history)
+    ? req.body.history
+        .slice(-10)
+        .filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string')
+        .map((m) => ({ role: m.role, content: m.text.slice(0, 2000) }))
+    : [];
+
+  const history = savedHistory.length >= clientHistory.length ? savedHistory : clientHistory;
+
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` }, body: JSON.stringify({ model: process.env.OPENAI_MODEL || 'gpt-4o-mini', temperature: .35, max_tokens: 350, messages: [{ role: 'system', content: system }, { role: 'user', content: message }] }) });
-    if (!response.ok) throw new Error('IA indisponível'); const data = await response.json(); res.json({ answer: data.choices?.[0]?.message?.content || 'Não consegui responder agora.' });
-  } catch { res.json({ answer: `Entendi sua dúvida sobre “${message}”. Neste momento não consegui acessar o guia de IA. Tente novamente em instantes.` }); }
+    const result = await runNutreAgent({
+      user,
+      calculations,
+      mode,
+      message,
+      history,
+    });
+
+    db.prepare('INSERT INTO chat_messages(user_id, role, text) VALUES(?, ?, ?)').run(req.userId, 'user', message);
+    db.prepare('INSERT INTO chat_messages(user_id, role, text) VALUES(?, ?, ?)').run(req.userId, 'assistant', result.answer);
+
+    res.json({
+      answer: result.answer,
+      model: result.model,
+      toolsUsed: result.toolsUsed,
+    });
+  } catch (err) {
+    console.error('Erro no Agente Nutrê:', err?.message || err);
+    res.json({
+      answer: `Entendi sua dúvida sobre “${message}”. Neste momento houve uma oscilação ao consultar o modelo Gemini (${err?.message || 'tente novamente'}). Tente enviar novamente em alguns segundos.`,
+    });
+  }
 });
 
 const dist = path.join(__dirname, '..', '..', 'frontend', 'dist');

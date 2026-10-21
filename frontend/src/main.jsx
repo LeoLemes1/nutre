@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Activity, AlertTriangle, ArrowLeft, BookOpen, Bot, Calculator, ChevronRight, CircleHelp, ExternalLink, Eye, EyeOff, Flame, HeartPulse, History, House, LocateFixed, LogOut, MapPin, Navigation, Send, ShieldCheck, Sparkles, UserRound, Utensils } from 'lucide-react';
+import { Activity, AlertTriangle, Apple, ArrowLeft, BookOpen, Bot, Calculator, Calendar, CheckCircle2, ChevronRight, CircleHelp, ExternalLink, Eye, EyeOff, FileText, Flame, HeartPulse, History, House, KeyRound, LocateFixed, Lock, LogOut, Mail, MapPin, Navigation, Ruler, Scale, Search, Send, ShieldCheck, Sparkles, UserRound, Utensils } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './styles.css';
@@ -34,15 +34,26 @@ const storage = {
 };
 
 // Rotas: a página fica na URL (#/calculator), então o refresh mantém a tela e o "voltar" do Android funciona.
-const PUBLIC_PAGES = ['landing', 'register', 'login', 'about'];
-const PRIVATE_PAGES = ['home', 'calculator', 'result', 'chat', 'history', 'support', 'profile'];
+const PUBLIC_PAGES = ['landing', 'register', 'login', 'forgot', 'terms', 'privacy', 'about'];
+const PRIVATE_PAGES = ['home', 'calculator', 'foods', 'result', 'chat', 'history', 'support', 'profile'];
 const readHash = () => window.location.hash.replace(/^#\/?/, '').split('?')[0];
 const resolvePage = (wanted, isAuth) => {
   if (isAuth) return PRIVATE_PAGES.includes(wanted) ? wanted : 'home';
   return PUBLIC_PAGES.includes(wanted) ? wanted : PRIVATE_PAGES.includes(wanted) ? 'login' : 'landing';
 };
 
-function Field({ label, error, children, hint }) { return <label className={`field ${error ? 'has-error' : ''}`}><span>{label}</span>{children}{error ? <small role="alert" aria-live="polite">{error}</small> : hint ? <small>{hint}</small> : null}</label>; }
+function Field({ label, icon: Icon, action, error, children, hint }) {
+  return (
+    <label className={`field ${error ? 'has-error' : ''}`}>
+      <span className="field-head">
+        <span className="field-label">{Icon && <Icon size={15} />}{label}</span>
+        {action}
+      </span>
+      {children}
+      {error ? <small role="alert" aria-live="polite">{error}</small> : hint ? <small>{hint}</small> : null}
+    </label>
+  );
+}
 function Button({ children, variant = 'primary', loading, ...props }) { return <button className={`button ${variant}`} disabled={loading || props.disabled} {...props}>{loading ? <span className="spinner" /> : children}</button>; }
 // Campo de senha com ícone de olho para mostrar/ocultar.
 function PasswordInput({ value, onChange, autoComplete = 'current-password', placeholder = '••••••••', ...props }) {
@@ -50,7 +61,283 @@ function PasswordInput({ value, onChange, autoComplete = 'current-password', pla
   return <div className="password-wrap"><input {...props} type={visible ? 'text' : 'password'} className={visible ? '' : 'masked'} autoComplete={autoComplete} autoCapitalize="none" autoCorrect="off" spellCheck="false" value={value} onChange={onChange} placeholder={placeholder} /><button type="button" className="eye-button" onClick={(e) => { e.preventDefault(); setVisible((v) => !v); }} aria-label={visible ? 'Ocultar senha' : 'Mostrar senha'} aria-pressed={visible}>{visible ? <EyeOff size={20} /> : <Eye size={20} />}</button></div>;
 }
 
-function Landing({ go }) { return <main className="landing"><div className="landing-mark"><HeartPulse size={22} /><b>Nutrê</b></div><div className="hero-art"><div className="orb orb-a" /><div className="orb orb-b" /><div className="plate"><Utensils size={34} /><span>cuidado que cabe na vida</span></div></div><p className="eyebrow">SAÚDE NUTRICIONAL SIMPLES</p><h1>Entenda sua alimentação, um passo de cada vez.</h1><p className="lead">Calcule seu IMC, conheça suas necessidades e converse com um guia que fala a sua língua.</p><div className="landing-actions"><Button onClick={() => go('register')}>Criar minha conta <ChevronRight size={20} /></Button><Button variant="secondary" onClick={() => go('login')}>Já tenho conta</Button></div><div className="trust"><ShieldCheck size={20} /><span>Gratuito, simples e feito para você.</span></div><button className="text-button" onClick={() => go('about')}>Conheça o projeto</button></main>; }
+const LANDING_FOODS = [
+  {
+    name: 'Peito de frango grelhado',
+    portion: '1 filé médio (120g) ≈ 190 kcal',
+    kcal: 159,
+    prot: '32,0g',
+    carb: '0g',
+    fat: '2,5g',
+    source: 'TACO · UNICAMP',
+    img: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=500&q=80',
+  },
+  {
+    name: 'Arroz branco + Feijão carioca',
+    portion: 'Base tradicional · Proteína vegetal completa',
+    kcal: 128,
+    prot: '4,8g',
+    carb: '28,1g',
+    fat: '0,5g',
+    source: 'TACO · UNICAMP',
+    img: 'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?auto=format&fit=crop&w=500&q=80',
+  },
+  {
+    name: 'Ovo de galinha cozido',
+    portion: '1 unidade média (50g) ≈ 66 a 73 kcal',
+    kcal: 146,
+    prot: '13,3g',
+    carb: '0,6g',
+    fat: '9,5g',
+    source: 'TACO · UNICAMP',
+    img: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?auto=format&fit=crop&w=500&q=80',
+  },
+  {
+    name: 'Banana prata in natura',
+    portion: '1 unidade média (60g) ≈ 55 a 65 kcal',
+    kcal: 98,
+    prot: '1,3g',
+    carb: '26,0g',
+    fat: '0,1g',
+    source: 'TACO · UNICAMP',
+    img: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=500&q=80',
+  },
+];
+
+function Landing({ go }) {
+  const [previewMode, setPreviewMode] = useState('health');
+  const isNutri = previewMode === 'nutrition';
+
+  return <main className="landing lp-root">
+    <header className="lp-topbar">
+      <div className="landing-mark">
+        <HeartPulse size={22} />
+        <b>Nutrê</b>
+      </div>
+      <button type="button" className="lp-login-pill" onClick={() => go('login')}>Entrar</button>
+    </header>
+
+    <section className="lp-hero">
+      <p className="eyebrow">SAÚDE E NUTRIÇÃO BASEADA EM EVIDÊNCIAS</p>
+      <h1>Alimentação real e cuidado que cabem na sua rotina.</h1>
+      <p className="lead">
+        Calcule seu IMC com os critérios oficiais para a sua idade, consulte <b>140 alimentos</b> analisados em laboratório e monte dietas acessíveis com o <b>Guia IA</b>.
+      </p>
+
+      <div className="lp-hero-visual">
+        <img
+          src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=80"
+          alt="Prato equilibrado com alimentos frescos, proteínas, grãos e vegetais"
+          className="lp-hero-img"
+        />
+        <div className="lp-hero-overlay" />
+        <div className="lp-float-card top-left">
+          <div className="lp-float-icon health"><HeartPulse size={14} /></div>
+          <div className="lp-float-text">
+            <b>IMC 22,1 kg/m² · Adequado</b>
+            <span>Critério OMS e SISVAN/MS por idade</span>
+          </div>
+        </div>
+        <div className="lp-float-card bottom-right">
+          <div className="lp-float-icon nutri"><Flame size={14} /></div>
+          <div className="lp-float-text">
+            <b>Meta: 1.980 kcal/dia</b>
+            <span>124g Prot · 220g Carb · 62g Gord</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="landing-actions lp-actions">
+        <Button onClick={() => go('register')}>Criar minha conta gratuita <ChevronRight size={20} /></Button>
+        <Button variant="secondary" onClick={() => go('login')}>Já tenho uma conta</Button>
+      </div>
+    </section>
+
+    <section className="lp-stats" aria-label="Números do projeto">
+      <div className="lp-stat-card">
+        <strong>140</strong>
+        <span>Alimentos com macros reais (TACO/TBCA)</span>
+      </div>
+      <div className="lp-stat-card">
+        <strong>2 faixas</strong>
+        <span>IMC Adulto (OMS) e Idoso 60+ (SISVAN)</span>
+      </div>
+      <div className="lp-stat-card">
+        <strong>SUS + IA</strong>
+        <span>Guia nutricional e mapa de UBS próximas</span>
+      </div>
+    </section>
+
+    <section className="lp-section">
+      <p className="eyebrow">DOIS AMBIENTES INTEGRADOS</p>
+      <h2>Explore os 2 modos do Nutrê</h2>
+      <p className="lp-section-sub">Alterne a qualquer momento no topo do aplicativo conforme a sua necessidade do dia:</p>
+
+      <div className="lp-mode-switch" role="tablist" aria-label="Prévia dos modos do aplicativo">
+        <button
+          type="button"
+          className={!isNutri ? 'active health' : ''}
+          onClick={() => setPreviewMode('health')}
+        >
+          <HeartPulse size={16} /> Modo Saúde
+        </button>
+        <button
+          type="button"
+          className={isNutri ? 'active nutri' : ''}
+          onClick={() => setPreviewMode('nutrition')}
+        >
+          <Apple size={16} /> Modo Nutrição
+        </button>
+      </div>
+
+      <div className={`lp-mode-card ${isNutri ? 'nutri' : 'health'}`}>
+        <div className="lp-mode-media">
+          <img
+            src={isNutri
+              ? 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=700&q=80'
+              : 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=700&q=80'}
+            alt={isNutri ? 'Ingredientes naturais e refeição brasileira nutritiva' : 'Avaliação nutricional e hábitos saudáveis'}
+          />
+          <span className="lp-mode-tag">
+            {isNutri ? 'TEMA LARANJA · ALIMENTOS & DIETA' : 'TEMA VERDE · AVALIAÇÃO & REDE SUS'}
+          </span>
+        </div>
+        <div className="lp-mode-body">
+          <h3>{isNutri ? 'Tabela TACO/UNICAMP e Dieta Acessível' : 'Cálculo de IMC, Calorias e Mapa de UBS'}</h3>
+          <ul className="lp-feature-list">
+            {isNutri ? <>
+              <li>
+                <CheckCircle2 size={16} />
+                <div><b>140 alimentos detalhados:</b> consulte calorias, proteínas, carboidratos, gorduras e fibras por 100g e por unidade ou fatia.</div>
+              </li>
+              <li>
+                <CheckCircle2 size={16} />
+                <div><b>Cardápio com o que você tem em casa:</b> o Guia IA monta refeições econômicas usando arroz, feijão, ovos, frango, frutas da estação e raízes.</div>
+              </li>
+              <li>
+                <CheckCircle2 size={16} />
+                <div><b>Ajuste para esportes:</b> metas adaptadas para musculação, corrida, futebol, caminhada ou rotina de trabalho físico.</div>
+              </li>
+            </> : <>
+              <li>
+                <CheckCircle2 size={16} />
+                <div><b>IMC fiel à sua idade:</b> aplica automaticamente os pontos de corte da OMS para adultos e do Ministério da Saúde (SISVAN) para 60 anos ou mais.</div>
+              </li>
+              <li>
+                <CheckCircle2 size={16} />
+                <div><b>Equação científica de Mifflin-St Jeor:</b> estima sua Taxa Metabólica Basal e necessidade diária de calorias e macronutrientes.</div>
+              </li>
+              <li>
+                <CheckCircle2 size={16} />
+                <div><b>Mapa de UBS próximas:</b> localiza Unidades Básicas de Saúde ao seu redor para acompanhamento gratuito pelo SUS quando houver alerta nutricional.</div>
+              </li>
+            </>}
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section className="lp-section">
+      <p className="eyebrow">DADOS REAIS · TACO 4ª ED. (NEPA/UNICAMP)</p>
+      <h2>O que tem no prato do brasileiro</h2>
+      <p className="lp-section-sub">Valores laboratoriais reais por 100g disponíveis para consulta imediata dentro da plataforma:</p>
+
+      <div className="lp-food-grid">
+        {LANDING_FOODS.map((f) => (
+          <article key={f.name} className="lp-food-card">
+            <div className="lp-food-img-wrap">
+              <img src={f.img} alt={f.name} loading="lazy" />
+              <span className="lp-food-kcal">{f.kcal} <small>kcal/100g</small></span>
+            </div>
+            <div className="lp-food-info">
+              <span className="lp-food-source">{f.source}</span>
+              <b>{f.name}</b>
+              <small>{f.portion}</small>
+              <div className="lp-food-macros">
+                <span>Prot <b>{f.prot}</b></span>
+                <span>Carb <b>{f.carb}</b></span>
+                <span>Gord <b>{f.fat}</b></span>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section className="lp-section">
+      <div className="lp-age-card">
+        <div className="lp-age-head">
+          <Scale size={20} />
+          <div>
+            <p className="eyebrow">PRECISÃO CLÍNICA</p>
+            <h2>Por que a sua idade muda o cálculo do IMC?</h2>
+          </div>
+        </div>
+        <p className="lp-age-desc">
+          Muitas calculadoras usam uma régua única para todo mundo. O Nutrê segue o protocolo oficial do <b>Ministério da Saúde (SISVAN)</b>, que diferencia adultos e idosos:
+        </p>
+        <div className="lp-age-compare">
+          <div className="lp-age-box">
+            <span>Adultos (18 a 59 anos)</span>
+            <strong>18,5 a 24,9 <small>kg/m²</small></strong>
+            <p>Faixa de eutrofia (peso adequado) segundo a Organização Mundial da Saúde (OMS).</p>
+          </div>
+          <div className="lp-age-box highlight">
+            <span>Pessoas 60+ (Idosos)</span>
+            <strong>22,0 a 27,0 <small>kg/m²</small></strong>
+            <p>Critério de Lipschitz (SISVAN/MS): maior reserva protege ossos e previne a perda muscular (sarcopenia).</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section className="lp-section">
+      <p className="eyebrow">FONTES OFICIAIS VERIFICADAS</p>
+      <h2>Ciência aberta e confiável</h2>
+      <div className="lp-sources-grid">
+        <div className="lp-source-item">
+          <BookOpen size={18} />
+          <div>
+            <b>TACO · NEPA / UNICAMP</b>
+            <span>Tabela Brasileira de Composição de Alimentos (4ª edição) com análises nacionais.</span>
+          </div>
+        </div>
+        <div className="lp-source-item">
+          <Utensils size={18} />
+          <div>
+            <b>TBCA · USP / FoRC & USDA</b>
+            <span>Composição nutricional de preparações, lanches, frios e alimentos do cotidiano.</span>
+          </div>
+        </div>
+        <div className="lp-source-item">
+          <HeartPulse size={18} />
+          <div>
+            <b>Ministério da Saúde & OMS</b>
+            <span>Diretrizes do Guia Alimentar para a População Brasileira e protocolos do SISVAN.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section className="lp-bottom-cta">
+      <h2>Comece a cuidar da sua alimentação hoje.</h2>
+      <p>Ao concluir seu cadastro em 3 passos rápidos, seu primeiro IMC e sua meta diária de calorias e macros já saem prontos.</p>
+      <Button onClick={() => go('register')}>Criar minha conta agora <ChevronRight size={20} /></Button>
+      <div className="lp-trust-row">
+        <ShieldCheck size={17} />
+        <span>100% gratuito · Sem anúncios · Dados protegidos (LGPD)</span>
+      </div>
+    </section>
+
+    <footer className="lp-footer-links">
+      <button type="button" onClick={() => go('about')}>Sobre o projeto</button>
+      <span>·</span>
+      <button type="button" onClick={() => go('terms')}>Termos de Uso</button>
+      <span>·</span>
+      <button type="button" onClick={() => go('privacy')}>Privacidade</button>
+    </footer>
+  </main>;
+}
 function About({ go }) { return <main className="auth-page"><button className="back" onClick={() => go('landing')} aria-label="Voltar"><ArrowLeft /></button><p className="eyebrow">SOBRE O NUTRÊ</p><h1>Orientação confiável, sem complicação.</h1><div className="info-card"><HeartPulse /><div><h2>Por que existe?</h2><p>Alimentação e cuidado em saúde precisam ser mais acessíveis. O Nutrê ajuda você a entender seus números e decidir o próximo passo.</p></div></div><div className="info-card"><Bot /><div><h2>IA com responsabilidade</h2><p>O Guia Nutrê traduz dados em linguagem direta. Ele não substitui nutricionista, médico ou atendimento em casos de risco.</p></div></div><Button onClick={() => go('register')}>Começar agora</Button></main>; }
 
 // Rascunho do cadastro guardado na aba (sem a senha) para não perder nada ao atualizar a página.
@@ -99,20 +386,214 @@ const Register = ({ go, onAuth }) => {
     } finally { setLoading(false); }
   };
   const title = step === 1 ? 'Como podemos te chamar?' : step === 2 ? 'Conte um pouco sobre você.' : 'Vamos completar sua estimativa.';
-  return <main className="auth-page"><button className="back" onClick={() => step > 1 ? setStep((s) => s - 1) : go('landing')} aria-label="Voltar"><ArrowLeft /></button><p className="eyebrow">CADASTRO · PASSO {step} DE 3</p><div className="stepper" aria-label={`Passo ${step} de 3`}><i className={step >= 1 ? 'done' : ''} /><i className={step >= 2 ? 'done' : ''} /><i className={step >= 3 ? 'done' : ''} /></div><h1>{title}</h1><p className="subhead">{step === 1 ? 'Esses dados serão usados para entrar na sua conta.' : step === 2 ? 'As informações ajudam a personalizar os cálculos.' : 'Com esses dados já calculamos seu primeiro IMC.'}</p>
+  return <main className="auth-page"><p className="eyebrow">CADASTRO · PASSO {step} DE 3</p><div className="stepper" aria-label={`Passo ${step} de 3`}><i className={step >= 1 ? 'done' : ''} /><i className={step >= 2 ? 'done' : ''} /><i className={step >= 3 ? 'done' : ''} /></div><h1>{title}</h1><p className="subhead">{step === 1 ? 'Esses dados serão usados para entrar na sua conta.' : step === 2 ? 'As informações ajudam a personalizar os cálculos.' : 'Com esses dados já calculamos seu primeiro IMC.'}</p>
     <form onSubmit={step === 3 ? submit : next} className="form-grid" noValidate>
-      {needsPassword && <Field label="Confirme sua senha" hint="Por segurança, a senha não fica salva ao atualizar a página."><PasswordInput autoComplete="new-password" value={form.password} onChange={set('password')} /></Field>}
-      {step === 1 && <><Field label="Seu nome"><input required autoComplete="name" value={form.name} onChange={set('name')} placeholder="Como quer ser chamado?" /></Field><Field label="E-mail" error={emailError}><input required autoComplete="email" autoCapitalize="none" spellCheck="false" type="email" inputMode="email" value={form.email} onChange={set('email')} placeholder="nome@exemplo.com" aria-invalid={!!emailError} /></Field>{emailError && emailError.includes('já possui') && <button type="button" className="inline-link" onClick={() => { try { sessionStorage.setItem('nutre-login-email', form.email.trim()); } catch { /* ignore */ } go('login'); }}>Já é você? Entrar com este e-mail</button>}<Field label="Crie uma senha" hint="Pelo menos 6 caracteres"><PasswordInput required autoComplete="new-password" minLength="6" value={form.password} onChange={set('password')} /></Field></>}
-      {step === 2 && <><Field label="Idade"><input required type="text" inputMode="numeric" pattern="[0-9]*" maxLength={3} value={form.age} onChange={(e) => setForm((f) => ({ ...f, age: e.target.value.replace(/\D/g, '') }))} placeholder="Ex.: 42" /></Field><Field label="Sexo"><select required value={form.sex} onChange={set('sex')}><option value="" disabled>Selecione uma opção</option><option value="masculino">Homem</option><option value="feminino">Mulher</option><option value="nao_informar">Não desejo informar</option></select></Field></>}
-      {step === 3 && <><div className="split"><Field label="Peso (kg)" hint="Ex.: 68 ou 68,5"><input required type="text" inputMode="decimal" autoComplete="off" value={form.weight} onChange={set('weight')} placeholder="Ex.: 68" /></Field><Field label="Altura" hint="170 ou 1,70"><input required type="text" inputMode="decimal" autoComplete="off" value={form.height} onChange={set('height')} placeholder="Ex.: 170" /></Field></div><Field label="Nível de atividade"><select value={form.activity} onChange={set('activity')}><option value="sedentario">Pouco ou nenhum</option><option value="leve">Leve</option><option value="moderado">Moderado</option><option value="intenso">Intenso</option></select></Field></>}
+      {needsPassword && <Field label="Confirme sua senha" icon={Lock} hint="Por segurança, a senha não fica salva ao atualizar a página."><PasswordInput autoComplete="new-password" value={form.password} onChange={set('password')} /></Field>}
+      {step === 1 && <><Field label="Seu nome" icon={UserRound}><input required autoComplete="name" value={form.name} onChange={set('name')} placeholder="Como quer ser chamado?" /></Field><Field label="E-mail" icon={Mail} error={emailError}><input required autoComplete="email" autoCapitalize="none" spellCheck="false" type="email" inputMode="email" value={form.email} onChange={set('email')} placeholder="nome@exemplo.com" aria-invalid={!!emailError} /></Field>{emailError && emailError.includes('já possui') && <button type="button" className="inline-link" onClick={() => { try { sessionStorage.setItem('nutre-login-email', form.email.trim()); } catch { /* ignore */ } go('login'); }}>Já é você? Entrar com este e-mail</button>}<Field label="Crie uma senha" icon={Lock} hint="Pelo menos 6 caracteres"><PasswordInput required autoComplete="new-password" minLength="6" value={form.password} onChange={set('password')} /></Field></>}
+      {step === 2 && <><Field label="Idade" icon={Calendar}><input required type="text" inputMode="numeric" pattern="[0-9]*" maxLength={3} value={form.age} onChange={(e) => setForm((f) => ({ ...f, age: e.target.value.replace(/\D/g, '') }))} placeholder="Ex.: 42" /></Field><Field label="Sexo" icon={UserRound}><select required value={form.sex} onChange={set('sex')}><option value="" disabled>Selecione uma opção</option><option value="masculino">Homem</option><option value="feminino">Mulher</option><option value="nao_informar">Não desejo informar</option></select></Field></>}
+      {step === 3 && <><div className="split"><Field label="Peso (kg)" icon={Scale} hint="Ex.: 68 ou 68,5"><input required type="text" inputMode="decimal" autoComplete="off" value={form.weight} onChange={set('weight')} placeholder="Ex.: 68" /></Field><Field label="Altura" icon={Ruler} hint="170 ou 1,70"><input required type="text" inputMode="decimal" autoComplete="off" value={form.height} onChange={set('height')} placeholder="Ex.: 170" /></Field></div><Field label="Nível de atividade" icon={Activity}><select value={form.activity} onChange={set('activity')}><option value="sedentario">Pouco ou nenhum (sem exercício)</option><option value="leve">Leve (1 a 3 dias na semana)</option><option value="moderado">Moderado (3 a 5 dias na semana)</option><option value="intenso">Intenso (6 a 7 dias na semana)</option></select></Field></>}
       {error && <div className="form-error" role="alert">{error}</div>}
+      <p className="legal-consent">
+        Ao se cadastrar em nossa plataforma, você concorda com nossos{' '}
+        <button type="button" onClick={() => go('terms')}>Termos de Uso</button> e{' '}
+        <button type="button" onClick={() => go('privacy')}>Política de Privacidade</button>.
+      </p>
       <Button type="submit" loading={loading}>{step === 3 ? 'Finalizar e criar conta' : 'Continuar'}</Button>
-    </form><p className="switch">Já tem uma conta? <button onClick={() => go('login')}>Entrar</button></p></main>;
+    </form><p className="switch">Já tem uma conta?<button onClick={() => go('login')}>Entrar</button></p></main>;
 };
-const Login = ({ go, onAuth }) => { const [email, setEmail] = useState(() => { try { const v = sessionStorage.getItem('nutre-login-email') || ''; sessionStorage.removeItem('nutre-login-email'); return v; } catch { return ''; } }), [password, setPassword] = useState(''), [error, setError] = useState(''), [loading, setLoading] = useState(false); const submit = async (e) => { e.preventDefault(); setLoading(true); setError(''); try { onAuth(await api('/auth/login', { method: 'POST', body: JSON.stringify({ email: email.trim(), password }) })); } catch (err) { setError(err.message); } finally { setLoading(false); } }; return <main className="auth-page auth-centered"><button className="back" onClick={() => go('landing')} aria-label="Voltar"><ArrowLeft /></button><div className="mini-logo"><HeartPulse /><b>Nutrê</b></div><h1>Que bom te ver.</h1><p className="subhead">Entre para continuar cuidando de você.</p><form onSubmit={submit} className="form-grid"><Field label="E-mail"><input type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck="false" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@exemplo.com" /></Field><Field label="Senha"><PasswordInput required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} /></Field>{error && <div className="form-error">{error}</div>}<Button loading={loading}>Entrar</Button></form><p className="switch">Ainda não tem conta? <button onClick={() => go('register')}>Criar cadastro</button></p></main>; };
 
-function Nav({ page, setPage }) { const items = [['home', House, 'Início'], ['calculator', Calculator, 'Calcular'], ['chat', Bot, 'Guia IA'], ['history', History, 'Histórico'], ['profile', UserRound, 'Conta']]; return <nav className="bottom-nav">{items.map(([id, Icon, label]) => <button key={id} className={page === id ? 'active' : ''} onClick={() => setPage(id)}><Icon size={20} /><span>{label}</span></button>)}</nav>; }
-function Shell({ children, page, setPage, user }) { return <div className="app-shell"><header><div className="brand"><HeartPulse /><span>Nutrê</span></div><button className="avatar" onClick={() => setPage('profile')} aria-label="Abrir conta">{(user.name || '?')[0]}</button></header><main className="screen" key={page}>{children}</main><Nav page={page} setPage={setPage} /></div>; }
+const Login = ({ go, onAuth }) => {
+  const [email, setEmail] = useState(() => { try { const v = sessionStorage.getItem('nutre-login-email') || ''; sessionStorage.removeItem('nutre-login-email'); return v; } catch { return ''; } });
+  const [password, setPassword] = useState(''), [error, setError] = useState(''), [loading, setLoading] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault(); setLoading(true); setError('');
+    try { onAuth(await api('/auth/login', { method: 'POST', body: JSON.stringify({ email: email.trim(), password }) })); }
+    catch (err) { setError(err.message); }
+    finally { setLoading(false); }
+  };
+  const openForgot = (e) => {
+    e.preventDefault();
+    try { if (email.trim()) sessionStorage.setItem('nutre-reset-email', email.trim()); } catch { /* ignore */ }
+    go('forgot');
+  };
+  return <main className="auth-page auth-centered">
+    <div className="mini-logo"><HeartPulse /><b>Nutrê</b></div>
+    <h1>Que bom te ver.</h1>
+    <p className="subhead">Entre para continuar cuidando de você.</p>
+    <form onSubmit={submit} className="form-grid">
+      <Field label="E-mail" icon={Mail}>
+        <input type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck="false" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@exemplo.com" />
+      </Field>
+      <Field
+        label="Senha"
+        icon={Lock}
+        action={<button type="button" className="forgot-link" onClick={openForgot}>Esqueceu a senha?</button>}
+      >
+        <PasswordInput required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      </Field>
+      {error && <div className="form-error">{error}</div>}
+      <Button loading={loading}>Entrar</Button>
+    </form>
+    <p className="switch">Ainda não tem conta?<button onClick={() => go('register')}>Criar cadastro</button></p>
+  </main>;
+};
+
+function ForgotPassword({ go }) {
+  const [email, setEmail] = useState(() => { try { const v = sessionStorage.getItem('nutre-reset-email') || ''; sessionStorage.removeItem('nutre-reset-email'); return v; } catch { return ''; } });
+  const [step, setStep] = useState(1); // 1 = verificar e-mail | 2 = nova senha | 3 = concluído
+  const [userName, setUserName] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const checkAccount = async (e) => {
+    e.preventDefault();
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError('Digite um e-mail válido.');
+    setLoading(true); setError('');
+    try {
+      const d = await api('/auth/forgot-check', { method: 'POST', body: JSON.stringify({ email: email.trim() }) });
+      setUserName(d.name || '');
+      setStep(2);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPass = async (e) => {
+    e.preventDefault();
+    if (password.length < 6) return setError('A nova senha precisa ter pelo menos 6 caracteres.');
+    if (password !== confirm) return setError('As senhas digitadas não conferem.');
+    setLoading(true); setError('');
+    try {
+      await api('/auth/reset-password', { method: 'POST', body: JSON.stringify({ email: email.trim(), password }) });
+      try { sessionStorage.setItem('nutre-login-email', email.trim()); } catch { /* ignore */ }
+      setStep(3);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return <main className="auth-page auth-centered">
+    <div className="mini-logo"><KeyRound /><b>Recuperar senha</b></div>
+    {step === 1 && <>
+      <h1>Esqueceu sua senha?</h1>
+      <p className="subhead">Informe o e-mail da sua conta para criar uma nova senha de acesso.</p>
+      <form onSubmit={checkAccount} className="form-grid" noValidate>
+        <Field label="E-mail da conta" icon={Mail}>
+          <input type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck="false" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@exemplo.com" />
+        </Field>
+        {error && <div className="form-error" role="alert">{error}</div>}
+        <Button loading={loading}>Continuar</Button>
+      </form>
+      <p className="switch">Lembrou a senha?<button onClick={() => go('login')}>Voltar para o login</button></p>
+    </>}
+    {step === 2 && <>
+      <h1>Olá{userName ? `, ${userName}` : ''}.</h1>
+      <p className="subhead">Escolha uma nova senha segura para a conta <b>{email.trim()}</b>.</p>
+      <form onSubmit={resetPass} className="form-grid" noValidate>
+        <Field label="Nova senha" icon={Lock} hint="Pelo menos 6 caracteres">
+          <PasswordInput required autoComplete="new-password" minLength="6" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </Field>
+        <Field label="Confirme a nova senha" icon={KeyRound}>
+          <PasswordInput required autoComplete="new-password" minLength="6" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+        </Field>
+        {error && <div className="form-error" role="alert">{error}</div>}
+        <Button loading={loading}>Salvar nova senha</Button>
+      </form>
+    </>}
+    {step === 3 && <div className="reset-success">
+      <div className="reset-success-icon"><CheckCircle2 size={32} /></div>
+      <h1>Senha atualizada!</h1>
+      <p className="subhead">Sua nova senha já está ativa. Agora é só entrar na sua conta.</p>
+      <div style={{ marginTop: 24 }}>
+        <Button onClick={() => go('login')}>Ir para o login</Button>
+      </div>
+    </div>}
+  </main>;
+}
+
+function TermsPage({ go }) {
+  return <main className="auth-page legal-page">
+    <button className="back" onClick={() => go('register')} aria-label="Voltar"><ArrowLeft /></button>
+    <p className="eyebrow">DOCUMENTO OFICIAL · NUTRÊ</p>
+    <h1>Termos de Uso</h1>
+    <p className="subhead">Última atualização: outubro de 2026. Leia com calma como funciona nossa plataforma.</p>
+    <div className="legal-list">
+      <section className="legal-card">
+        <div className="legal-card-head"><FileText size={18} /><h2>1. Finalidade educativa e informativa</h2></div>
+        <p>O Nutrê é uma ferramenta gratuita de educação nutricional e triagem antropométrica baseada nos parâmetros da Organização Mundial da Saúde (OMS), do Ministério da Saúde (SISVAN e Guia Alimentar para a População Brasileira) e da Tabela Brasileira de Composição de Alimentos (TACO/UNICAMP e TBCA/USP).</p>
+      </section>
+      <section className="legal-card">
+        <div className="legal-card-head"><HeartPulse size={18} /><h2>2. Não substituição de atendimento profissional</h2></div>
+        <p>Os cálculos de IMC, estimativas de calorias, distribuição de macronutrientes e respostas do Guia IA possuem caráter estritamente orientativo. Nenhuma informação da plataforma substitui diagnóstico clínico, prescrição dietética individualizada ou acompanhamento de nutricionista ou médico.</p>
+      </section>
+      <section className="legal-card">
+        <div className="legal-card-head"><Bot size={18} /><h2>3. Uso responsável do Guia Nutrê (IA)</h2></div>
+        <p>O assistente inteligente auxilia na compreensão dos seus resultados e na organização de refeições acessíveis com alimentos do seu cotidiano. Caso apresente condições clínicas específicas (como diabetes, hipertensão, gestação, alergias alimentares ou transtornos alimentares), procure orientação presencial em uma UBS ou consultório.</p>
+      </section>
+      <section className="legal-card">
+        <div className="legal-card-head"><UserRound size={18} /><h2>4. Conta e veracidade das informações</h2></div>
+        <p>Você é responsável por manter a confidencialidade da sua senha e por informar dados reais de idade, peso e altura para que as estimativas apresentadas sejam adequadas à sua faixa etária.</p>
+      </section>
+    </div>
+    <Button onClick={() => go('register')}>Voltar ao cadastro</Button>
+  </main>;
+}
+
+function PrivacyPage({ go }) {
+  return <main className="auth-page legal-page">
+    <button className="back" onClick={() => go('register')} aria-label="Voltar"><ArrowLeft /></button>
+    <p className="eyebrow">PROTEÇÃO DE DADOS · LGPD</p>
+    <h1>Política de Privacidade</h1>
+    <p className="subhead">Transparência total sobre como cuidamos das suas informações pessoais (Lei nº 13.709/2018 — LGPD).</p>
+    <div className="legal-list">
+      <section className="legal-card">
+        <div className="legal-card-head"><ShieldCheck size={18} /><h2>1. Quais dados coletamos</h2></div>
+        <p>Coletamos apenas os dados essenciais para o funcionamento dos cálculos nutricionais: nome, e-mail, senha criptografada, idade, sexo biológico opcional, peso, altura e nível de atividade física.</p>
+      </section>
+      <section className="legal-card">
+        <div className="legal-card-head"><Lock size={18} /><h2>2. Segurança e armazenamento</h2></div>
+        <p>Sua senha é armazenada exclusivamente em formato de hash criptográfico (bcrypt) e nunca em texto puro. Não vendemos, alugamos nem compartilhamos seus dados pessoais ou histórico de saúde com terceiros para fins publicitários.</p>
+      </section>
+      <section className="legal-card">
+        <div className="legal-card-head"><MapPin size={18} /><h2>3. Uso da localização (UBS próximas)</h2></div>
+        <p>A localização geográfica do seu dispositivo só é utilizada quando você autoriza expressamente na aba de apoio para localizar Unidades Básicas de Saúde (UBS) próximas. Essa coordenada não fica gravada em histórico de rastreamento.</p>
+      </section>
+      <section className="legal-card">
+        <div className="legal-card-head"><CheckCircle2 size={18} /><h2>4. Seus direitos</h2></div>
+        <p>Você pode consultar seus dados registrados, atualizar seu peso, altura e nível de atividade ou limpar seu histórico de conversas com o Guia IA a qualquer momento diretamente pelo aplicativo.</p>
+      </section>
+    </div>
+    <Button onClick={() => go('register')}>Voltar ao cadastro</Button>
+  </main>;
+}
+
+function Nav({ page, setPage, mode }) {
+  const second = mode === 'nutrition' ? ['foods', Apple, 'Alimentos'] : ['calculator', Calculator, 'Calcular'];
+  const items = [['home', House, 'Início'], second, ['chat', Bot, 'Guia IA'], ['history', History, 'Histórico'], ['profile', UserRound, 'Conta']];
+  return <nav className="bottom-nav">{items.map(([id, Icon, label]) => <button key={id} className={page === id ? 'active' : ''} onClick={() => setPage(id)}><Icon size={20} /><span>{label}</span></button>)}</nav>;
+}
+function Shell({ children, page, setPage, user, mode, onToggleMode }) {
+  const isNutri = mode === 'nutrition';
+  return <div className={`app-shell ${isNutri ? 'theme-nutrition' : ''} ${page === 'chat' ? 'is-chat' : ''}`}>
+    <header>
+      <div className="brand">{isNutri ? <Utensils /> : <HeartPulse />}<span>Nutrê</span></div>
+      <div className="header-actions">
+        <button type="button" className="mode-toggle" onClick={onToggleMode} aria-label={isNutri ? 'Alternar para modo Saúde' : 'Alternar para modo Nutrição'}>
+          {isNutri ? <><HeartPulse size={15} /><span>Modo Saúde</span></> : <><Apple size={15} /><span>Modo Nutrição</span></>}
+        </button>
+        <button className="avatar" onClick={() => setPage('profile')} aria-label="Abrir conta">{(user.name || '?')[0]}</button>
+      </div>
+    </header>
+    <main className="screen" key={`${mode}-${page}`}>{children}</main>
+    <Nav page={page} setPage={setPage} mode={mode} />
+  </div>;
+}
 function Loading() { return <div className="loading-card" role="status"><span className="spinner dark" /> Carregando seus dados…</div>; }
 
 // Tabela oficial de classificação do IMC, destacando a faixa da pessoa.
@@ -141,15 +622,204 @@ function MacroCard({ item, onClick }) {
   </Tag>;
 }
 
-function Dashboard({ user, history, hasManual, loaded, setPage }) {
+const DIET_PROMPT = 'Preciso de ajuda para montar uma dieta acessível para o meu dia a dia, com base nas minhas calorias diárias e rotina de exercícios. Pode me perguntar quais alimentos eu mais tenho em casa (arroz, feijão, tipos de proteína, gorduras, frutas) e se pratico algum esporte ou atividade física?';
+
+function Dashboard({ user, history, hasManual, loaded, setPage, mode, onStartDiet }) {
   const latest = history[0];
   const fromSignup = latest?.source === 'cadastro';
-  return <><p className="eyebrow">{fromSignup && !hasManual ? 'SEU PRIMEIRO RESULTADO' : 'HOJE É UM BOM DIA'}</p><h1>Olá, {user.name.split(' ')[0]}.</h1><p className="subhead">{fromSignup && !hasManual ? 'Já calculamos seu IMC com os dados do seu cadastro.' : 'Vamos cuidar de você com calma?'}</p>
-    {!loaded && !latest ? <Loading /> : latest ? <>
-      <button className="summary-card clickable" onClick={() => setPage('result')}><div><p>{fromSignup ? 'Calculado com os dados do cadastro' : 'Seu último resultado'}</p><div className="summary-main"><strong>IMC {bmiBR(latest.bmi)}</strong><span className={`pill ${toneOf(latest)}`}>{latest.classification}</span></div></div><small className="summary-link">Ver tabela e detalhes <ChevronRight size={15} /></small></button>
-      <MacroCard item={latest} onClick={() => setPage('result')} />
-    </> : <section className="summary-card empty"><Sparkles /><div><strong>Seu primeiro passo começa aqui</strong><p>Faça um cálculo para conhecer seu ponto de partida.</p></div></section>}
-    <section className="section"><h2>O que você precisa agora?</h2><button className="action-card" onClick={() => setPage('calculator')}><div className="action-icon"><Calculator /></div><div><b>{hasManual ? 'Calcular novamente' : 'Calcular IMC'}</b><span>{hasManual ? 'Atualize peso, altura e atividade.' : 'Confira seus dados e conheça seu IMC e suas necessidades.'}</span></div><ChevronRight /></button><button className="action-card blue" onClick={() => setPage('chat')}><div className="action-icon"><Bot /></div><div><b>Conversar com o Guia Nutrê</b><span>Tire dúvidas sem linguagem difícil.</span></div><ChevronRight /></button></section></>;
+  const isNutri = mode === 'nutrition';
+  return <>
+    <p className="eyebrow">{isNutri ? 'MODO NUTRIÇÃO · TACO/UNICAMP' : fromSignup && !hasManual ? 'SEU PRIMEIRO RESULTADO' : 'HOJE É UM BOM DIA'}</p>
+    <h1>Olá, {user.name.split(' ')[0]}.</h1>
+    <p className="subhead">{isNutri ? 'Consulte a tabela nutricional dos alimentos e monte uma dieta acessível para a sua rotina.' : fromSignup && !hasManual ? 'Já calculamos seu IMC com os dados do seu cadastro.' : 'Vamos cuidar de você com calma?'}</p>
+    {!loaded && !latest ? <Loading /> : latest ? (
+      isNutri ? (
+        <MacroCard item={latest} onClick={() => setPage('foods')} />
+      ) : <>
+        <button className="summary-card clickable" onClick={() => setPage('result')}><div><p>{fromSignup ? 'Calculado com os dados do cadastro' : 'Seu último resultado'}</p><div className="summary-main"><strong>IMC {bmiBR(latest.bmi)}</strong><span className={`pill ${toneOf(latest)}`}>{latest.classification}</span></div></div><small className="summary-link">Ver tabela e detalhes <ChevronRight size={15} /></small></button>
+        <MacroCard item={latest} onClick={() => setPage('result')} />
+      </>
+    ) : <section className="summary-card empty"><Sparkles /><div><strong>Seu primeiro passo começa aqui</strong><p>Faça um cálculo para conhecer seu ponto de partida.</p></div></section>}
+    <section className="section">
+      <h2>{isNutri ? 'Nutrição e plano alimentar' : 'O que você precisa agora?'}</h2>
+      {isNutri ? <>
+        <button className="action-card" onClick={() => setPage('foods')}><div className="action-icon"><Apple /></div><div><b>Tabela nutricional de alimentos</b><span>Veja proteínas, gorduras, carboidratos e calorias de dezenas de alimentos (TACO/UNICAMP).</span></div><ChevronRight /></button>
+        <button className="action-card diet-cta" onClick={onStartDiet}><div className="action-icon"><Utensils /></div><div><b>Montar dieta acessível com a IA</b><span>Cardápio feito com os alimentos que você tem em casa, segundo suas calorias e esportes.</span></div><ChevronRight /></button>
+      </> : <>
+        <button className="action-card" onClick={() => setPage('calculator')}><div className="action-icon"><Calculator /></div><div><b>{hasManual ? 'Calcular novamente' : 'Calcular IMC'}</b><span>{hasManual ? 'Atualize peso, altura e atividade.' : 'Confira seus dados e conheça seu IMC e suas necessidades.'}</span></div><ChevronRight /></button>
+        <button className="action-card blue" onClick={() => setPage('chat')}><div className="action-icon"><Bot /></div><div><b>Conversar com o Guia Nutrê</b><span>Tire dúvidas sem linguagem difícil.</span></div><ChevronRight /></button>
+      </>}
+    </section>
+  </>;
+}
+
+const DEFAULT_FOOD_CATEGORIES = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'cereais', label: 'Arroz, pães e raízes' },
+  { id: 'leguminosas', label: 'Feijões e grãos' },
+  { id: 'carnes', label: 'Carnes, frango e peixes' },
+  { id: 'ovos_laticinios', label: 'Ovos, leite e queijos' },
+  { id: 'frios_pastas', label: 'Frios, embutidos e pastas' },
+  { id: 'lanches_fastfood', label: 'Pizzas, lanches e sushi' },
+  { id: 'frutas', label: 'Frutas' },
+  { id: 'hortalicas', label: 'Verduras e legumes' },
+  { id: 'oleos_sementes', label: 'Óleos, manteiga e castanhas' },
+  { id: 'doces_bebidas', label: 'Doces, suplementos e bebidas' },
+];
+
+const FOODS_PAGE_SIZE = 10;
+let cachedFoodsData = null;
+
+function FoodsPage({ token, latest, onStartDiet }) {
+  const [data, setData] = useState(cachedFoodsData);
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('todos');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(!cachedFoodsData);
+  const listTopRef = useRef(null);
+
+  useEffect(() => {
+    if (!cachedFoodsData) setLoading(true);
+    api('/foods', {}, token)
+      .then((res) => { cachedFoodsData = res; setData(res); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [token]);
+
+  const rawCategories = data?.meta?.categories?.length ? data.meta.categories : DEFAULT_FOOD_CATEGORIES;
+  const categories = rawCategories.map((c) => (typeof c === 'string' ? { id: c, label: c } : c));
+  const categoryLabels = Object.fromEntries(categories.map((c) => [c.id, c.label]));
+  const foods = data?.foods || [];
+  const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const q = norm(search.trim());
+  const filtered = foods.filter((f) => (category === 'todos' || f.category === category) && (!q || norm(f.name).includes(q) || norm(f.measure).includes(q) || norm(categoryLabels[f.category] || f.category).includes(q)));
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / FOODS_PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIdx = (safePage - 1) * FOODS_PAGE_SIZE;
+  const pageItems = filtered.slice(startIdx, startIdx + FOODS_PAGE_SIZE);
+
+  const goToPage = (nextPage) => {
+    const clamped = Math.max(1, Math.min(totalPages, nextPage));
+    setCurrentPage(clamped);
+    if (listTopRef.current) {
+      listTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const formatSourceRef = (ref) => {
+    if (ref === 'TACO') return 'TACO · NEPA/UNICAMP';
+    if (String(ref).includes('USDA')) return 'USDA FoodData / ANVISA';
+    return 'TBCA · USP/FoRC';
+  };
+
+  return <div className="foods-page">
+    <div>
+      <p className="eyebrow">TABELA OFICIAL · TACO (UNICAMP), TBCA (USP) & USDA</p>
+      <h1>Alimentos e nutrientes</h1>
+      <p className="subhead">Consulte calorias, proteínas, carboidratos e gorduras por 100g e a média por unidade ou fatia.</p>
+
+      <button type="button" className="diet-banner" onClick={onStartDiet}>
+        <div className="diet-banner-icon"><Utensils size={20} /></div>
+        <div>
+          <b>Montar dieta com o Guia IA</b>
+          <span>Use os alimentos que você já tem em casa{latest ? ` para atingir suas ${latest.calories.toLocaleString('pt-BR')} kcal/dia` : ''}.</span>
+        </div>
+        <ChevronRight size={18} />
+      </button>
+
+      <div ref={listTopRef} className="foods-search">
+        <Search size={18} />
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+          placeholder="Buscar (ex.: pizza, big mac, sushi, requeijão, peito de peru, ovo)..."
+          aria-label="Buscar alimento"
+        />
+        {search && <button type="button" className="clear-search" onClick={() => { setSearch(''); setCurrentPage(1); }}>Limpar</button>}
+      </div>
+
+      <div className="category-chips" role="tablist" aria-label="Categorias de alimentos">
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            type="button"
+            className={category === cat.id ? 'active' : ''}
+            onClick={() => { setCategory(cat.id); setCurrentPage(1); }}
+          >
+            {cat.id === 'todos' ? `${cat.label} (${foods.length})` : cat.label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? <Loading /> : <>
+        <div className="foods-meta-bar">
+          <span>
+            {filtered.length
+              ? <>Mostrando <b>{startIdx + 1}–{Math.min(startIdx + FOODS_PAGE_SIZE, filtered.length)}</b> de <b>{filtered.length}</b> alimentos</>
+              : <>Nenhum alimento encontrado</>}
+          </span>
+          <small>Valores por 100g</small>
+        </div>
+        {pageItems.length ? <>
+          <div className="foods-list">
+            {pageItems.map((f) => <article key={f.id} className="food-card">
+              <div className="food-card-head">
+                <div>
+                  <span className="food-cat">{categoryLabels[f.category] || f.category}</span>
+                  <b>{f.name}</b>
+                  <small>{f.measure}</small>
+                </div>
+                <div className="food-kcal">
+                  <strong>{f.kcal}</strong>
+                  <span>kcal</span>
+                </div>
+              </div>
+              <div className="food-macros">
+                <div className="food-macro prot"><span>Proteínas</span><b>{decimalBR(f.protein)}g</b></div>
+                <div className="food-macro carb"><span>Carboidratos</span><b>{decimalBR(f.carbs)}g</b></div>
+                <div className="food-macro fat"><span>Gorduras</span><b>{decimalBR(f.fats)}g</b></div>
+                <div className="food-macro fib"><span>Fibras</span><b>{decimalBR(f.fiber)}g</b></div>
+              </div>
+              <div className="food-foot">
+                <span>Fonte científica: <b>{formatSourceRef(f.ref)}</b></span>
+                <span>Porção de 100g</span>
+              </div>
+            </article>)}
+          </div>
+          {totalPages > 1 && (
+            <nav className="foods-pagination" aria-label="Paginação de alimentos">
+              <button
+                type="button"
+                className="page-btn"
+                disabled={safePage <= 1}
+                onClick={() => goToPage(safePage - 1)}
+              >
+                Anterior
+              </button>
+              <span className="page-indicator">
+                Página <b>{safePage}</b> de <b>{totalPages}</b>
+              </span>
+              <button
+                type="button"
+                className="page-btn"
+                disabled={safePage >= totalPages}
+                onClick={() => goToPage(safePage + 1)}
+              >
+                Próxima
+              </button>
+            </nav>
+          )}
+        </> : <div className="empty-state"><Apple /><b>Nenhum alimento encontrado</b><p>Tente buscar por outro nome ou selecione "Todos" nas categorias.</p></div>}
+      </>}
+    </div>
+    <div className="page-footer">
+      <Button onClick={onStartDiet}><Bot size={19} /> Ajuda para montar dieta com a IA</Button>
+    </div>
+  </div>;
 }
 
 function CalculatorPage({ user, hasManual, onSaved, setPage }) {
@@ -165,7 +835,7 @@ function CalculatorPage({ user, hasManual, onSaved, setPage }) {
     try { await onSaved({ weight: parseDecimal(form.weight), height: parseHeightCm(form.height), activity: form.activity }); setPage('result'); } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
   return <div className="calc-page"><div><p className="eyebrow">CALCULADORA</p><h1>{hasManual ? 'Atualize seus dados.' : 'Calcule seu IMC.'}</h1><p className="subhead">{hasManual ? 'Uma estimativa para acompanhar seu cuidado.' : 'Já preenchemos com os dados do seu cadastro. Confira e calcule.'}</p></div>
-    <form className="form-grid calc-form" onSubmit={submit} noValidate><Field label="Peso de hoje (kg)" hint="Ex.: 68 ou 68,5"><input required type="text" inputMode="decimal" autoComplete="off" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} /></Field><Field label="Altura" hint="Em centímetros (170) ou metros (1,70)"><input required type="text" inputMode="decimal" autoComplete="off" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} /></Field><Field label="Nível de atividade"><select value={form.activity} onChange={(e) => setForm({ ...form, activity: e.target.value })}><option value="sedentario">Pouco ou nenhum</option><option value="leve">Leve</option><option value="moderado">Moderado</option><option value="intenso">Intenso</option></select></Field>{error && <div className="form-error" role="alert">{error}</div>}<div className="page-footer"><p className="disclaimer"><CircleHelp size={15} /> Esta é uma estimativa e não substitui acompanhamento profissional.</p><Button loading={loading}>{hasManual ? 'Calcular novamente' : 'Calcular IMC'}</Button></div></form></div>;
+    <form className="form-grid calc-form" onSubmit={submit} noValidate><Field label="Peso de hoje (kg)" hint="Ex.: 68 ou 68,5"><input required type="text" inputMode="decimal" autoComplete="off" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} /></Field><Field label="Altura" hint="Em centímetros (170) ou metros (1,70)"><input required type="text" inputMode="decimal" autoComplete="off" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} /></Field><Field label="Nível de atividade"><select value={form.activity} onChange={(e) => setForm({ ...form, activity: e.target.value })}><option value="sedentario">Pouco ou nenhum (sem exercício)</option><option value="leve">Leve (1 a 3 dias na semana)</option><option value="moderado">Moderado (3 a 5 dias na semana)</option><option value="intenso">Intenso (6 a 7 dias na semana)</option></select></Field>{error && <div className="form-error" role="alert">{error}</div>}<div className="page-footer"><p className="disclaimer"><CircleHelp size={15} /> Esta é uma estimativa e não substitui acompanhamento profissional.</p><Button loading={loading}>{hasManual ? 'Calcular novamente' : 'Calcular IMC'}</Button></div></form></div>;
 }
 
 function Result({ result, loaded, setPage }) {
@@ -181,7 +851,170 @@ function Result({ result, loaded, setPage }) {
     <Button onClick={() => setPage('chat')}><Bot size={19} /> Conversar sobre o resultado</Button><p className="disclaimer"><CircleHelp size={15} /> O IMC não diferencia massa muscular de gordura. Ele é um indicador de triagem e não substitui a avaliação de um profissional de saúde.</p></>;
 }
 
-function Chat({ token }) { const [messages, setMessages] = useState([{ role: 'assistant', text: 'Olá! Eu sou o Guia Nutrê. Posso explicar seu resultado em palavras simples.' }]), [input, setInput] = useState(''), [loading, setLoading] = useState(false); const send = async (e) => { e.preventDefault(); if (!input.trim() || loading) return; const q = input.trim(); setMessages((m) => [...m, { role: 'user', text: q }]); setInput(''); setLoading(true); try { const d = await api('/chat', { method: 'POST', body: JSON.stringify({ message: q }) }, token); setMessages((m) => [...m, { role: 'assistant', text: d.answer }]); } catch (err) { setMessages((m) => [...m, { role: 'assistant', text: err.message }]); } finally { setLoading(false); } }; return <div className="chat-page"><div><p className="eyebrow">GUIA NUTRÊ</p><h1>Converse com calma.</h1><p className="subhead">Respostas simples, com cuidado e responsabilidade.</p><div className="chat-list">{messages.map((m, i) => <div key={i} className={`bubble ${m.role}`}>{m.role === 'assistant' && <Bot size={17} />}<span>{m.text}</span></div>)}{loading && <div className="bubble assistant"><Bot size={17} /><span className="typing"><i /><i /><i /></span></div>}</div></div><div className="page-footer"><form className="chat-form" onSubmit={send}><label className="sr-only" htmlFor="question">Sua pergunta</label><input id="question" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Escreva sua dúvida..." /><button aria-label="Enviar pergunta" disabled={!input.trim() || loading}><Send size={20} /></button></form><p className="disclaimer"><CircleHelp size={15} /> Não substitui atendimento nutricional ou médico.</p></div></div>; }
+// Renderizador leve de Markdown para respostas ricas do Agente Gemini (negrito, títulos e listas).
+function FormattedText({ text }) {
+  const renderInline = (str) => {
+    const parts = String(str || '').split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((p, idx) =>
+      p.startsWith('**') && p.endsWith('**') ? <strong key={idx}>{p.slice(2, -2)}</strong> : p
+    );
+  };
+  const lines = String(text || '').split('\n');
+  return <div className="msg-body">
+    {lines.map((raw, i) => {
+      const line = raw.trim();
+      if (!line) return <div key={i} className="msg-spacer" />;
+      if (/^#{1,4}\s+/.test(line)) return <b key={i} className="msg-heading">{renderInline(line.replace(/^#{1,4}\s+/, ''))}</b>;
+      if (/^[-•*]\s+/.test(line)) return <div key={i} className="msg-bullet"><span>•</span><div>{renderInline(line.replace(/^[-•*]\s+/, ''))}</div></div>;
+      return <p key={i}>{renderInline(line)}</p>;
+    })}
+  </div>;
+}
+
+function Chat({ token, mode, pendingPrompt, onConsumePrompt }) {
+  const isNutri = mode === 'nutrition';
+  const greeting = isNutri
+    ? 'Olá! Eu sou o Guia Nutrê. Posso ajudar a montar uma dieta acessível com os alimentos que você tem em casa (baseada na tabela TACO/UNICAMP) ou tirar dúvidas sobre nutrição.'
+    : 'Olá! Eu sou o Guia Nutrê. Posso explicar seu resultado, analisar sua evolução ou tirar dúvidas em palavras simples.';
+
+  const [messages, setMessages] = useState(() => [{ role: 'assistant', text: greeting }]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const autoSentRef = useRef(false);
+  const listRef = useRef(null);
+  const lastUserMsgRef = useRef(null);
+
+  // Posiciona o scroll no comentário do usuário (topo da lista) para ele ler o início da resposta e descer no seu ritmo.
+  const scrollToUserMessage = useCallback(() => {
+    setTimeout(() => {
+      if (listRef.current && lastUserMsgRef.current) {
+        const listTop = listRef.current.getBoundingClientRect().top;
+        const msgTop = lastUserMsgRef.current.getBoundingClientRect().top;
+        listRef.current.scrollTop += msgTop - listTop - 6;
+      }
+    }, 40);
+  }, []);
+
+  const sendMessage = useCallback(async (text, currentHistory) => {
+    const q = String(text || '').trim();
+    if (!q) return;
+    setShowInfo(false);
+    setMessages((m) => [...m, { role: 'user', text: q }]);
+    setInput('');
+    setLoading(true);
+    scrollToUserMessage();
+    try {
+      const d = await api('/chat', { method: 'POST', body: JSON.stringify({ message: q, mode, history: currentHistory }) }, token);
+      setMessages((m) => [...m, { role: 'assistant', text: d.answer }]);
+    } catch (err) {
+      setMessages((m) => [...m, { role: 'assistant', text: err.message }]);
+    } finally {
+      setLoading(false);
+      scrollToUserMessage();
+    }
+  }, [token, mode, scrollToUserMessage]);
+
+  // Carrega histórico persistido no banco (ou dispara o prompt automático de montar dieta).
+  useEffect(() => {
+    let active = true;
+    api('/chat/history', {}, token)
+      .then((res) => {
+        if (!active) return;
+        const saved = Array.isArray(res.messages) ? res.messages : [];
+        if (pendingPrompt && !autoSentRef.current) {
+          autoSentRef.current = true;
+          onConsumePrompt?.();
+          if (saved.length) setMessages([{ role: 'assistant', text: greeting }, ...saved]);
+          sendMessage(pendingPrompt, saved);
+        } else if (saved.length) {
+          setMessages([{ role: 'assistant', text: greeting }, ...saved]);
+          scrollToUserMessage();
+        }
+      })
+      .catch(() => {
+        if (pendingPrompt && !autoSentRef.current) {
+          autoSentRef.current = true;
+          onConsumePrompt?.();
+          sendMessage(pendingPrompt, []);
+        }
+      });
+    return () => { active = false; };
+  }, [token, pendingPrompt, onConsumePrompt, sendMessage, greeting, scrollToUserMessage]);
+
+  const clearChat = async () => {
+    setShowInfo(false);
+    try { await api('/chat/history', { method: 'DELETE' }, token); } catch { /* ignore */ }
+    setMessages([{ role: 'assistant', text: greeting }]);
+  };
+
+  const send = (e) => {
+    e.preventDefault();
+    if (!input.trim() || loading) return;
+    sendMessage(input.trim(), messages.slice(1));
+  };
+
+  let lastUserIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'user') { lastUserIdx = i; break; }
+  }
+
+  const infoText = isNutri
+    ? 'Baseado no Guia Alimentar do Ministério da Saúde e na Tabela TACO/UNICAMP. Não substitui nutricionista ou médico.'
+    : 'Orientação educativa baseada na OMS e Ministério da Saúde. Não substitui atendimento nutricional ou médico.';
+
+  return <div className="chat-page">
+    <div className="chat-header-block">
+      <div className="chat-top-row">
+        <div>
+          <p className="eyebrow">{isNutri ? 'GUIA NUTRÊ · NUTRIÇÃO' : 'GUIA NUTRÊ · SAÚDE'}</p>
+          <h1 className="chat-title">{isNutri ? 'Monte sua dieta.' : 'Converse com calma.'}</h1>
+        </div>
+        <div className="chat-top-actions">
+          {messages.length > 1 && (
+            <button type="button" className="clear-chat-btn" onClick={clearChat} disabled={loading}>
+              Nova conversa
+            </button>
+          )}
+          <div className="chat-info-wrap">
+            <button
+              type="button"
+              className={`chat-info-btn ${showInfo ? 'active' : ''}`}
+              onClick={() => setShowInfo((v) => !v)}
+              aria-label="Referências científicas e aviso"
+              aria-expanded={showInfo}
+            >
+              <CircleHelp size={18} />
+            </button>
+            <div className={`chat-info-popover ${showInfo ? 'open' : ''}`} role="tooltip">
+              <b>Informação importante</b>
+              <span>{infoText}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p className="subhead chat-subhead">{isNutri ? 'Adaptamos às suas calorias, treinos e ao que você tem em casa.' : 'Respostas simples, com cuidado e responsabilidade.'}</p>
+    </div>
+
+    <div ref={listRef} className="chat-list" onClick={() => showInfo && setShowInfo(false)}>
+      {messages.map((m, i) => (
+        <div key={i} ref={i === lastUserIdx ? lastUserMsgRef : null} className={`bubble ${m.role}`}>
+          {m.role === 'assistant' && <Bot size={17} />}
+          <FormattedText text={m.text} />
+        </div>
+      ))}
+      {loading && <div className="bubble assistant"><Bot size={17} /><span className="typing"><i /><i /><i /></span></div>}
+    </div>
+
+    <div className="page-footer chat-footer">
+      <form className="chat-form" onSubmit={send}>
+        <label className="sr-only" htmlFor="question">Sua pergunta</label>
+        <input id="question" value={input} onFocus={() => setShowInfo(false)} onChange={(e) => setInput(e.target.value)} placeholder="Digite sua mensagem..." />
+        <button aria-label="Enviar pergunta" disabled={!input.trim() || loading}><Send size={20} /></button>
+      </form>
+    </div>
+  </div>;
+}
 
 function HistoryPage({ history, hasManual, loaded, onOpen, setPage }) {
   return <div className="history-page"><div><p className="eyebrow">SEU CAMINHO</p><h1>Histórico de cálculos</h1><p className="subhead">Observe tendências, sem se comparar.</p>
@@ -286,11 +1119,14 @@ function Support({ token }) {
     </section>
   </>;
 }
-const ACTIVITY_LABELS = { sedentario: 'Sedentário', leve: 'Atividade leve', moderado: 'Atividade moderada', intenso: 'Atividade intensa' };
+const ACTIVITY_LABELS = { sedentario: 'Sedentário (sem exercício)', leve: 'Atividade leve (1 a 3 dias/sem)', moderado: 'Atividade moderada (3 a 5 dias/sem)', intenso: 'Atividade intensa (6 a 7 dias/sem)' };
 const SOURCES = [
+  { badge: 'NEPA / UNICAMP · TACO 4ª ed.', title: 'Tabela Brasileira de Composição de Alimentos (TACO)', desc: 'Referência oficial brasileira coordenada pela UNICAMP e Ministério da Saúde com análise laboratorial de calorias, proteínas, carboidratos, lipídios e fibras dos alimentos.', url: 'https://www.cfn.org.br/wp-content/uploads/2017/03/taco_4_edicao_ampliada_e_revisada.pdf', linkLabel: 'unicamp.br / cfn.org.br' },
+  { badge: 'USP / FoRC · TBCA', title: 'Tabela Brasileira de Composição de Alimentos (USP)', desc: 'Base científica da Universidade de São Paulo e Food Research Center (FoRC/FAPESP) com composição nutricional por 100g e medidas caseiras.', url: 'https://www.tbca.net.br/', linkLabel: 'tbca.net.br' },
+  { badge: 'USDA & ANVISA · RDC 429', title: 'USDA FoodData Central & Tabelas Nutricionais Oficiais', desc: 'Base oficial do Departamento de Agricultura dos EUA (USDA) e rotulagem nutricional padronizada (ANVISA) utilizada para referências de lanches rápidos, pizzas, hambúrgueres e culinária japonesa.', url: 'https://fdc.nal.usda.gov/', linkLabel: 'fdc.nal.usda.gov' },
+  { badge: 'Ministério da Saúde · Brasil', title: 'Guia Alimentar para a População Brasileira', desc: 'Diretrizes oficiais sobre alimentação adequada, acessível e saudável, priorizando alimentos in natura ou minimamente processados da cultura alimentar brasileira.', url: 'https://bvsms.saude.gov.br/bvs/publicacoes/guia_alimentar_populacao_brasileira_2ed.pdf', linkLabel: 'bvsms.saude.gov.br' },
   { badge: 'OMS · Adultos', title: 'Organização Mundial da Saúde (WHO)', desc: 'Pontos de corte de IMC para adultos (20 a 59 anos): Baixo peso, Eutrofia, Sobrepeso e Obesidade graus I, II e III (WHO Technical Report Series 894, 2000).', url: 'https://www.who.int/news-room/fact-sheets/detail/obesity-and-overweight', linkLabel: 'who.int' },
   { badge: 'Ministério da Saúde · SISVAN', title: 'Vigilância Alimentar e Nutricional', desc: 'Protocolos oficiais do SUS para avaliação antropométrica na Atenção Primária, incluindo a referência de Lipschitz (1994) para pessoas idosas (60+ anos).', url: 'https://aps.saude.gov.br/ape/vigilanciaalimentar/sisvan', linkLabel: 'aps.saude.gov.br' },
-  { badge: 'Ministério da Saúde · Brasil', title: 'Guia Alimentar para a População Brasileira', desc: 'Diretrizes oficiais sobre alimentação adequada e saudável, priorizando alimentos in natura ou minimamente processados.', url: 'https://bvsms.saude.gov.br/bvs/publicacoes/guia_alimentar_populacao_brasileira_2ed.pdf', linkLabel: 'bvsms.saude.gov.br' },
   { badge: 'Gasto Energético · AMDR', title: 'Equação de Harris-Benedict & Macronutrientes', desc: 'Estimativa de taxa metabólica basal revisada por Roza & Shizgal (1984) combinada ao fator de atividade física e distribuição equilibrada (50% carboidratos, 20% proteínas, 30% lipídios).', url: 'https://pubmed.ncbi.nlm.nih.gov/6741850/', linkLabel: 'pubmed.ncbi.nlm.nih.gov' },
 ];
 
@@ -323,6 +1159,8 @@ function Profile({ user, onLogout }) {
 function App() {
   const [auth, setAuth] = useState(() => storage.get('nutre-auth'));
   const [page, setPageState] = useState(() => resolvePage(readHash() || storage.get('nutre-page', ''), !!storage.get('nutre-auth')));
+  const [mode, setMode] = useState(() => storage.get('nutre-mode', 'health'));
+  const [pendingPrompt, setPendingPrompt] = useState(null);
   const [history, setHistory] = useState(() => (auth ? storage.get('nutre-history', []) : []));
   const [selected, setSelected] = useState(null);
   const [loaded, setLoaded] = useState(false);
@@ -337,8 +1175,22 @@ function App() {
   }, []);
   const setPage = useCallback((next) => { storage.set('nutre-page', next); setPageState(next); if (readHash() !== next) window.location.hash = `/${next}`; window.scrollTo(0, 0); }, []);
   useEffect(() => { if (!['result', 'support', 'chat'].includes(page)) setSelected(null); }, [page]);
+  useEffect(() => { if (page === 'foods' && mode !== 'nutrition') { setMode('nutrition'); storage.set('nutre-mode', 'nutrition'); } }, [page, mode]);
 
-  const clearSession = useCallback(() => { storage.remove('nutre-auth', 'nutre-token', 'nutre-history', 'nutre-page'); setAuth(null); setHistory([]); setSelected(null); setLoaded(false); }, []);
+  const toggleMode = useCallback(() => {
+    const nextMode = mode === 'nutrition' ? 'health' : 'nutrition';
+    setMode(nextMode);
+    storage.set('nutre-mode', nextMode);
+    if (nextMode === 'nutrition' && page === 'calculator') setPage('foods');
+    else if (nextMode === 'health' && page === 'foods') setPage('calculator');
+  }, [mode, page, setPage]);
+
+  const startDiet = useCallback(() => {
+    setPendingPrompt(DIET_PROMPT);
+    setPage('chat');
+  }, [setPage]);
+
+  const clearSession = useCallback(() => { storage.remove('nutre-auth', 'nutre-token', 'nutre-history', 'nutre-page', 'nutre-mode'); setMode('health'); setAuth(null); setHistory([]); setSelected(null); setLoaded(false); }, []);
   const load = useCallback(async (token) => {
     try {
       const [me, calcs] = await Promise.all([api('/me', {}, token), api('/calculations', {}, token)]);
@@ -354,6 +1206,7 @@ function App() {
   const onAuth = (d) => {
     const session = { token: d.token, user: d.user };
     storage.set('nutre-auth', session); storage.set('nutre-token', d.token);
+    storage.set('nutre-mode', 'health'); setMode('health');
     if (d.initialCalculation) { setHistory([d.initialCalculation]); storage.set('nutre-history', [d.initialCalculation]); }
     setLoaded(false); setAuth(session); setPage('home');
   };
@@ -362,20 +1215,30 @@ function App() {
 
   if (!auth) {
     const p = resolvePage(page, false);
-    return <div className="public-wrap">{p === 'register' ? <Register go={setPage} onAuth={onAuth} /> : p === 'login' ? <Login go={setPage} onAuth={onAuth} /> : p === 'about' ? <About go={setPage} /> : <Landing go={setPage} />}</div>;
+    const pubViews = {
+      register: <Register go={setPage} onAuth={onAuth} />,
+      login: <Login go={setPage} onAuth={onAuth} />,
+      forgot: <ForgotPassword go={setPage} />,
+      terms: <TermsPage go={setPage} />,
+      privacy: <PrivacyPage go={setPage} />,
+      about: <About go={setPage} />,
+      landing: <Landing go={setPage} />,
+    };
+    return <div className="public-wrap">{pubViews[p] || pubViews.landing}</div>;
   }
   const current = resolvePage(page, true);
   const hasManual = history.some((c) => c.source === 'manual');
   const result = selected || history[0] || null;
   const views = {
-    home: <Dashboard user={auth.user} history={history} hasManual={hasManual} loaded={loaded} setPage={setPage} />,
+    home: <Dashboard user={auth.user} history={history} hasManual={hasManual} loaded={loaded} setPage={setPage} mode={mode} onStartDiet={startDiet} />,
     calculator: <CalculatorPage user={auth.user} hasManual={hasManual} onSaved={onSaved} setPage={setPage} />,
+    foods: <FoodsPage token={auth.token} latest={history[0]} onStartDiet={startDiet} />,
     result: <Result result={result} loaded={loaded} setPage={setPage} />,
-    chat: <Chat token={auth.token} />,
+    chat: <Chat token={auth.token} mode={mode} pendingPrompt={pendingPrompt} onConsumePrompt={() => setPendingPrompt(null)} />,
     history: <HistoryPage history={history} hasManual={hasManual} loaded={loaded} onOpen={(item) => { setSelected(item); setPage('result'); }} setPage={setPage} />,
     support: <Support token={auth.token} />,
     profile: <Profile user={auth.user} history={history} setPage={setPage} onLogout={logout} />,
   };
-  return <Shell page={current} setPage={(p) => { if (p !== 'result') setSelected(null); setPage(p); }} user={auth.user}>{views[current]}</Shell>;
+  return <Shell page={current} setPage={(p) => { if (p !== 'result') setSelected(null); setPage(p); }} user={auth.user} mode={mode} onToggleMode={toggleMode}>{views[current]}</Shell>;
 }
 createRoot(document.getElementById('root')).render(<App />);
