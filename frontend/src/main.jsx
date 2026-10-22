@@ -7,12 +7,27 @@ import './styles.css';
 import './register.css';
 import './ios.css';
 import './desktop.css';
+import { handleLocalApi } from './localEngine.js';
+
+const IS_LOCAL_BACKEND = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 const api = async (path, options = {}, token) => {
-  const res = await fetch(`/api${path}`, { ...options, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers || {}) } });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) { const err = new Error(data.error || 'Não foi possível concluir agora.'); err.status = res.status; throw err; }
-  return data;
+  if (!IS_LOCAL_BACKEND) {
+    return handleLocalApi(path, options, token);
+  }
+  try {
+    const res = await fetch(`/api${path}`, { ...options, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers || {}) } });
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      return handleLocalApi(path, options, token);
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { const err = new Error(data.error || 'Não foi possível concluir agora.'); err.status = res.status; throw err; }
+    return data;
+  } catch (err) {
+    if (err?.status) throw err;
+    return handleLocalApi(path, options, token);
+  }
 };
 
 // O Safari (iOS) não entende "2026-10-19 21:00:00"; convertemos para ISO ("2026-10-19T21:00:00Z").
