@@ -51,10 +51,43 @@ if (!calcColumns.includes('source')) {
       AND abs(strftime('%s',c.created_at)-strftime('%s',u.created_at))<=5)`);
 }
 
+// Perfis de acesso: todos são 'user'; o e-mail abaixo é sempre 'admin' (e não pode ser rebaixado nem excluído).
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'leolemes021@gmail.com').trim().toLowerCase();
+const userColumns = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
+for (const [column, ddl] of [
+  ['role', "role TEXT NOT NULL DEFAULT 'user'"],
+  ['created_ip', 'created_ip TEXT'],
+  ['last_access_at', 'last_access_at TEXT'],
+  ['last_ip', 'last_ip TEXT'],
+]) if (!userColumns.includes(column)) db.exec(`ALTER TABLE users ADD COLUMN ${ddl}`);
+db.exec(`
+  CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    action TEXT NOT NULL,
+    actor_id INTEGER, actor_email TEXT,
+    target_id INTEGER, target_email TEXT,
+    ip TEXT, detail TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_log(actor_id);
+  CREATE INDEX IF NOT EXISTS idx_audit_target ON audit_log(target_id);
+`);
+db.prepare("UPDATE users SET role='admin' WHERE email=? AND role<>'admin'").run(ADMIN_EMAIL);
+
+// Só confia em X-Forwarded-For quando houver proxy reverso configurado (evita IP falsificado na auditoria).
+app.set('trust proxy', process.env.TRUST_PROXY === '1');
+const clientIp = (req) => String(req.ip || req.socket?.remoteAddress || '').replace(/^::ffff:/, '').replace(/^::1$/, '127.0.0.1') || 'desconhecido';
+const effectiveRole = (u) => (u.email === ADMIN_EMAIL ? 'admin' : u.role === 'admin' ? 'admin' : 'user');
+const audit = (req, { action, actor = null, target = null, detail = null }) => {
+  db.prepare('INSERT INTO audit_log(action,actor_id,actor_email,target_id,target_email,ip,detail) VALUES(?,?,?,?,?,?,?)')
+    .run(action, actor?.id ?? null, actor?.email ?? null, target?.id ?? null, target?.email ?? null, clientIp(req), detail);
+};
+const touchAccess = (req, userId) => db.prepare("UPDATE users SET last_access_at=datetime('now'), last_ip=? WHERE id=?").run(clientIp(req), userId);
+
 app.use(cors()); app.use(express.json({ limit: '1mb' }));
 const sign = (user) => jwt.sign({ sub: user.id, name: user.name }, jwtSecret, { expiresIn: '14d' });
 const auth = (req, res, next) => { try { req.userId = Number(jwt.verify((req.headers.authorization || '').replace('Bearer ', ''), jwtSecret).sub); next(); } catch { res.status(401).json({ error: 'Sua sessão expirou. Entre novamente.' }); } };
-const publicUser = (u) => ({ id: u.id, name: u.name, email: u.email, age: u.age, sex: u.sex, weight: u.weight, height: u.height, activity: u.activity });
+const publicUser = (u) => ({ id: u.id, name: u.name, email: u.email, age: u.age, sex: u.sex, weight: u.weight, height: u.height, activity: u.activity, role: effectiveRole(u) });
 const toNumber = (value) => Number(String(value ?? '').trim().replace(',', '.').replace(/[^\d.]/g, ''));
 // Aceita "170", "170 cm", "1,70" e "1.70" e sempre devolve em metros.
 const normalizeHeight = (value) => {
@@ -115,8 +148,9 @@ app.post('/api/auth/register', async (req, res) => {
   const parsed = registerSchema.safeParse({ ...req.body, weight: toNumber(req.body.weight), height: normalizeHeight(req.body.height) }); if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten().fieldErrors.height ? 'Altura inválida. Digite em centímetros (ex.: 170) ou em metros (ex.: 1,70).' : 'Revise os dados do cadastro.', fields: parsed.error.flatten().fieldErrors });
   const v = parsed.data; if (db.prepare('SELECT id FROM users WHERE email=?').get(v.email.toLowerCase())) return res.status(409).json({ error: 'Este e-mail já possui uma conta.' });
   const hash = await bcrypt.hash(v.password, 12);
-  const info = db.prepare('INSERT INTO users(name,email,password_hash,age,sex,weight,height,activity) VALUES(?,?,?,?,?,?,?,?)').run(v.name, v.email.toLowerCase(), hash, v.age, v.sex, v.weight, v.height, v.activity);
+  const info = db.prepare('INSERT INTO users(name,email,password_hash,age,sex,weight,height,activity,role,created_ip,last_access_at,last_ip) VALUES(?,?,?,?,?,?,?,?,?,?,datetime(\'now\'),?)').run(v.name, v.email.toLowerCase(), hash, v.age, v.sex, v.weight, v.height, v.activity, v.email.toLowerCase() === ADMIN_EMAIL ? 'admin' : 'user', clientIp(req), clientIp(req));
   const user = db.prepare('SELECT * FROM users WHERE id=?').get(info.lastInsertRowid);
+  audit(req, { action: 'register', actor: user, target: user, detail: 'Conta criada' });
   // Já usamos os dados do cadastro para gerar o primeiro resultado do usuário.
   const initialCalculation = calculate(v, user);
   const calculation = insertCalculation(user.id, v, initialCalculation, 'cadastro');
@@ -124,8 +158,13 @@ app.post('/api/auth/register', async (req, res) => {
   res.status(201).json({ token: sign(user), user: publicUser(user), initialCalculation: { ...saved, ...initialCalculation } });
 });
 app.post('/api/auth/login', async (req, res) => {
-  const email = String(req.body.email || '').toLowerCase(); const user = db.prepare('SELECT * FROM users WHERE email=?').get(email);
-  if (!user || !(await bcrypt.compare(String(req.body.password || ''), user.password_hash))) return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
+  const email = String(req.body.email || '').toLowerCase(); let user = db.prepare('SELECT * FROM users WHERE email=?').get(email);
+  if (!user || !(await bcrypt.compare(String(req.body.password || ''), user.password_hash))) {
+    audit(req, { action: 'login_failed', target: user, detail: user ? 'Senha incorreta' : `E-mail não cadastrado: ${email.slice(0, 120)}` });
+    return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
+  }
+  touchAccess(req, user.id); audit(req, { action: 'login', actor: user, target: user, detail: 'Entrada no app' });
+  user = db.prepare('SELECT * FROM users WHERE id=?').get(user.id);
   res.json({ token: sign(user), user: publicUser(user) });
 });
 app.post('/api/auth/forgot-check', (req, res) => {
@@ -144,9 +183,74 @@ app.post('/api/auth/reset-password', async (req, res) => {
   if (!user) return res.status(404).json({ error: 'Conta não encontrada.' });
   const hash = await bcrypt.hash(password, 12);
   db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(hash, user.id);
+  audit(req, { action: 'password_reset', actor: user, target: user, detail: 'Senha redefinida' });
   res.json({ ok: true, message: 'Senha redefinida com sucesso!' });
 });
-app.get('/api/me', auth, (req, res) => { const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.userId); if (!user) return res.status(401).json({ error: 'Sua sessão expirou. Entre novamente.' }); res.json({ user: publicUser(user) }); });
+app.get('/api/me', auth, (req, res) => {
+  const user = db.prepare('SELECT * FROM users WHERE id=?').get(req.userId); if (!user) return res.status(401).json({ error: 'Sua sessão expirou. Entre novamente.' });
+  // Registra o último acesso ao reabrir o app (no máximo a cada 5 minutos, para não pesar).
+  db.prepare("UPDATE users SET last_access_at=datetime('now'), last_ip=? WHERE id=? AND (last_access_at IS NULL OR last_access_at < datetime('now','-5 minutes'))").run(clientIp(req), user.id);
+  res.json({ user: publicUser(user) });
+});
+
+// ---------------------------------------------------------------------------
+// Painel administrativo: só para role 'admin'. Tudo paginado e auditado.
+// ---------------------------------------------------------------------------
+const adminOnly = (req, res, next) => auth(req, res, () => {
+  const admin = db.prepare('SELECT * FROM users WHERE id=?').get(req.userId);
+  if (!admin) return res.status(401).json({ error: 'Sua sessão expirou. Entre novamente.' });
+  if (effectiveRole(admin) !== 'admin') return res.status(403).json({ error: 'Acesso restrito a administradores.' });
+  req.admin = admin; next();
+});
+const pageParams = (req, defaultSize = 10) => {
+  const pageSize = Math.min(50, Math.max(1, parseInt(req.query.pageSize, 10) || defaultSize));
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  return { page, pageSize, offset: (page - 1) * pageSize };
+};
+const adminUserView = (u) => ({ id: u.id, name: u.name, email: u.email, role: effectiveRole(u), protected: u.email === ADMIN_EMAIL, created_at: u.created_at, created_ip: u.created_ip, last_access_at: u.last_access_at, last_ip: u.last_ip, calc_count: u.calc_count ?? 0 });
+
+app.get('/api/admin/users', adminOnly, (req, res) => {
+  const { page, pageSize, offset } = pageParams(req);
+  const like = `%${String(req.query.q || '').trim().toLowerCase().replace(/[%_]/g, '')}%`;
+  const where = 'WHERE lower(name) LIKE ? OR lower(email) LIKE ?';
+  const total = db.prepare(`SELECT COUNT(*) AS n FROM users ${where}`).get(like, like).n;
+  const rows = db.prepare(`SELECT u.*, (SELECT COUNT(*) FROM calculations c WHERE c.user_id=u.id) AS calc_count FROM users u ${where} ORDER BY u.id DESC LIMIT ? OFFSET ?`).all(like, like, pageSize, offset);
+  const stats = db.prepare("SELECT COUNT(*) AS total, SUM(CASE WHEN role='admin' OR email=? THEN 1 ELSE 0 END) AS admins, SUM(CASE WHEN last_access_at >= datetime('now','-1 day') THEN 1 ELSE 0 END) AS active24h FROM users").get(ADMIN_EMAIL);
+  res.json({ users: rows.map(adminUserView), total, page, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)), stats: { total: stats.total, admins: stats.admins || 0, active24h: stats.active24h || 0 } });
+});
+app.patch('/api/admin/users/:id/role', adminOnly, (req, res) => {
+  const role = req.body.role; if (!['admin', 'user'].includes(role)) return res.status(400).json({ error: 'Perfil inválido.' });
+  const target = db.prepare('SELECT * FROM users WHERE id=?').get(Number(req.params.id)); if (!target) return res.status(404).json({ error: 'Usuário não encontrado.' });
+  if (target.email === ADMIN_EMAIL) return res.status(403).json({ error: 'O administrador principal não pode ser alterado.' });
+  if (target.id === req.admin.id) return res.status(403).json({ error: 'Você não pode alterar o seu próprio perfil.' });
+  if (effectiveRole(target) === role) return res.json({ user: adminUserView(target) });
+  db.prepare('UPDATE users SET role=? WHERE id=?').run(role, target.id);
+  audit(req, { action: role === 'admin' ? 'role_promote' : 'role_demote', actor: req.admin, target, detail: role === 'admin' ? 'Promovido a administrador' : 'Rebaixado para usuário' });
+  res.json({ user: adminUserView(db.prepare('SELECT * FROM users WHERE id=?').get(target.id)) });
+});
+app.delete('/api/admin/users/:id', adminOnly, (req, res) => {
+  const target = db.prepare('SELECT * FROM users WHERE id=?').get(Number(req.params.id)); if (!target) return res.status(404).json({ error: 'Usuário não encontrado.' });
+  if (target.email === ADMIN_EMAIL) return res.status(403).json({ error: 'O administrador principal não pode ser excluído.' });
+  if (target.id === req.admin.id) return res.status(403).json({ error: 'Você não pode excluir a sua própria conta por aqui.' });
+  db.exec('BEGIN');
+  try {
+    db.prepare('DELETE FROM calculations WHERE user_id=?').run(target.id);
+    db.prepare('DELETE FROM chat_messages WHERE user_id=?').run(target.id);
+    db.prepare('DELETE FROM users WHERE id=?').run(target.id);
+    audit(req, { action: 'user_delete', actor: req.admin, target, detail: `Conta excluída (${target.name})` });
+    db.exec('COMMIT');
+  } catch (err) { db.exec('ROLLBACK'); throw err; }
+  res.json({ ok: true });
+});
+app.get('/api/admin/audit', adminOnly, (req, res) => {
+  const { page, pageSize, offset } = pageParams(req);
+  const userId = Number(req.query.userId) || null;
+  const where = userId ? 'WHERE actor_id=? OR target_id=?' : '';
+  const args = userId ? [userId, userId] : [];
+  const total = db.prepare(`SELECT COUNT(*) AS n FROM audit_log ${where}`).get(...args).n;
+  const items = db.prepare(`SELECT id, action, actor_id, actor_email, target_id, target_email, ip, detail, created_at FROM audit_log ${where} ORDER BY id DESC LIMIT ? OFFSET ?`).all(...args, pageSize, offset);
+  res.json({ items, total, page, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)) });
+});
 
 function calculate(v, user) {
   const bmi = +(v.weight / (v.height * v.height)).toFixed(1);

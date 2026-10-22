@@ -7,6 +7,8 @@ import './styles.css';
 import './register.css';
 import './ios.css';
 import './desktop.css';
+import './admin.css';
+import { AdminPage } from './AdminPage.jsx';
 import { handleLocalApi } from './localEngine.js';
 
 const IS_LOCAL_BACKEND = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -51,7 +53,7 @@ const storage = {
 
 // Rotas: a página fica na URL (#/calculator), então o refresh mantém a tela e o "voltar" do Android funciona.
 const PUBLIC_PAGES = ['landing', 'register', 'login', 'forgot', 'terms', 'privacy', 'about'];
-const PRIVATE_PAGES = ['home', 'calculator', 'foods', 'result', 'chat', 'history', 'support', 'profile'];
+const PRIVATE_PAGES = ['home', 'calculator', 'foods', 'result', 'chat', 'history', 'support', 'profile', 'admin'];
 const readHash = () => window.location.hash.replace(/^#\/?/, '').split('?')[0];
 const resolvePage = (wanted, isAuth) => {
   if (isAuth) return PRIVATE_PAGES.includes(wanted) ? wanted : 'home';
@@ -791,12 +793,13 @@ function PrivacyPage({ go }) {
   </main>;
 }
 
-function Nav({ page, setPage, mode }) {
+function Nav({ page, setPage, mode, isAdmin }) {
   const second = mode === 'nutrition' ? ['foods', Apple, 'Alimentos'] : ['calculator', Calculator, 'Calcular'];
   const items = [['home', House, 'Início'], second, ['chat', Bot, 'Guia IA'], ['history', History, 'Histórico'], ['profile', UserRound, 'Conta']];
   const isNutri = mode === 'nutrition';
   return <nav className="bottom-nav">
     {items.map(([id, Icon, label]) => <button key={id} className={page === id ? 'active' : ''} onClick={() => setPage(id)}><Icon size={20} /><span>{label}</span></button>)}
+    {isAdmin && <button type="button" className={`desktop-only ${page === 'admin' ? 'active' : ''}`} onClick={() => setPage('admin')}><ShieldCheck size={20} /><span>Painel admin</span></button>}
     <div className="nav-sidebar-card desktop-only">
       <img
         src={isNutri
@@ -820,11 +823,12 @@ function Shell({ children, page, setPage, user, mode, onToggleMode }) {
         <button type="button" className="mode-toggle" onClick={onToggleMode} aria-label={isNutri ? 'Alternar para modo Saúde' : 'Alternar para modo Nutrição'}>
           {isNutri ? <><HeartPulse size={15} /><span>Modo Saúde</span></> : <><Apple size={15} /><span>Modo Nutrição</span></>}
         </button>
+        {user.role === 'admin' && <button type="button" className={`avatar admin-link ${page === 'admin' ? 'active' : ''}`} onClick={() => setPage('admin')} aria-label="Painel do admin" title="Painel do admin"><ShieldCheck size={19} /></button>}
         <button className="avatar" onClick={() => setPage('profile')} aria-label="Abrir conta">{(user.name || '?')[0]}</button>
       </div>
     </header>
     <main className={`screen page-${page}`} key={`${mode}-${page}`}>{children}</main>
-    <Nav page={page} setPage={setPage} mode={mode} />
+    <Nav page={page} setPage={setPage} mode={mode} isAdmin={user.role === 'admin'} />
   </div>;
 }
 function Loading() { return <div className="loading-card" role="status"><span className="spinner dark" /> Carregando seus dados…</div>; }
@@ -1577,7 +1581,7 @@ function App() {
     };
     return <div className="public-wrap">{pubViews[p] || pubViews.landing}</div>;
   }
-  const current = resolvePage(page, true);
+  const current = resolvePage(page, true) === 'admin' && auth.user?.role !== 'admin' ? 'home' : resolvePage(page, true);
   const hasManual = history.some((c) => c.source === 'manual');
   const result = selected || history[0] || null;
   const views = {
@@ -1589,6 +1593,7 @@ function App() {
     history: <HistoryPage history={history} hasManual={hasManual} loaded={loaded} onOpen={(item) => { setSelected(item); setPage('result'); }} setPage={setPage} />,
     support: <Support token={auth.token} />,
     profile: <Profile user={auth.user} history={history} setPage={setPage} onLogout={logout} />,
+    admin: <AdminPage api={api} token={auth.token} me={auth.user} parseDate={parseDate} Button={Button} />,
   };
   return <Shell page={current} setPage={(p) => { if (p !== 'result') setSelected(null); setPage(p); }} user={auth.user} mode={mode} onToggleMode={toggleMode}>{views[current]}</Shell>;
 }

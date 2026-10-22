@@ -15,6 +15,113 @@ const GEMINI_RACE_MODELS = [
 const DB_USERS_KEY = 'nutre-cloud-users';
 const DB_CALCS_KEY = 'nutre-cloud-calcs';
 const DB_CHAT_KEY = 'nutre-cloud-chat';
+const DB_ADMIN_USERS_KEY = 'nutre-admin-users';
+const DB_ADMIN_AUDIT_KEY = 'nutre-admin-audit';
+
+let cachedClientIp = null;
+const getClientIp = async () => {
+  if (cachedClientIp) return cachedClientIp;
+  try {
+    const res = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(1500) });
+    if (res.ok) {
+      const d = await res.json();
+      if (d.ip) {
+        cachedClientIp = d.ip;
+        return d.ip;
+      }
+    }
+  } catch {
+    /* fallback */
+  }
+  return '127.0.0.1';
+};
+
+const INITIAL_ADMIN_USERS = [
+  { id: 1, name: 'Leonardo Lemes', email: 'leolemes021@gmail.com', role: 'admin', protected: true, created_at: '2026-10-19 20:32:30', created_ip: '189.40.10.20', last_access_at: new Date().toISOString().replace('T', ' ').slice(0, 19), last_ip: '189.40.10.20', calc_count: 5 },
+  { id: 2, name: 'Ana Souza', email: 'ana.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-10 12:00:00', created_ip: '189.40.10.20', last_access_at: '2026-10-22 14:10:00', last_ip: '189.40.10.20', calc_count: 2 },
+  { id: 3, name: 'Bruno Lima', email: 'bruno.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-11 15:30:00', created_ip: '189.41.17.21', last_access_at: '2026-10-22 15:20:00', last_ip: '189.41.17.21', calc_count: 3 },
+  { id: 4, name: 'Carla Mendes', email: 'carla.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-12 09:15:00', created_ip: '189.42.24.22', last_access_at: '2026-10-22 16:45:00', last_ip: '189.42.24.22', calc_count: 1 },
+  { id: 5, name: 'Diego Alves', email: 'diego.teste@nutre.test', role: 'admin', protected: false, created_at: '2026-10-13 18:20:00', created_ip: '189.43.31.23', last_access_at: '2026-10-22 17:00:00', last_ip: '189.43.31.23', calc_count: 4 },
+  { id: 6, name: 'Elaine Costa', email: 'elaine.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-14 11:40:00', created_ip: '189.44.38.24', last_access_at: '2026-10-21 20:10:00', last_ip: '189.44.38.24', calc_count: 2 },
+  { id: 7, name: 'Felipe Rocha', email: 'felipe.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-15 14:50:00', created_ip: '189.45.45.25', last_access_at: '2026-10-21 18:30:00', last_ip: '189.45.45.25', calc_count: 1 },
+  { id: 8, name: 'Gabriela Dias', email: 'gabriela.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-16 16:05:00', created_ip: '189.46.52.26', last_access_at: '2026-10-22 11:15:00', last_ip: '189.46.52.26', calc_count: 2 },
+  { id: 9, name: 'Henrique Prado', email: 'henrique.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-17 10:25:00', created_ip: '189.47.59.27', last_access_at: '2026-10-22 13:40:00', last_ip: '189.47.59.27', calc_count: 3 },
+  { id: 10, name: 'Isabela Nunes', email: 'isabela.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-18 13:35:00', created_ip: '189.48.66.28', last_access_at: '2026-10-22 18:00:00', last_ip: '189.48.66.28', calc_count: 2 },
+  { id: 11, name: 'João Pereira', email: 'joao.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-19 18:47:00', created_ip: '189.49.73.29', last_access_at: '2026-10-21 14:12:00', last_ip: '189.49.73.29', calc_count: 1 },
+];
+
+const INITIAL_AUDIT_LOG = [
+  { id: 1, action: 'role_promote', actor_id: 1, actor_email: 'leolemes021@gmail.com', target_id: 5, target_email: 'diego.teste@nutre.test', ip: '189.40.10.20', detail: 'Promovido a administrador', created_at: '2026-10-22 17:05:00' },
+  { id: 2, action: 'login', actor_id: 1, actor_email: 'leolemes021@gmail.com', target_id: 1, target_email: 'leolemes021@gmail.com', ip: '189.40.10.20', detail: 'Entrada no app', created_at: '2026-10-22 18:40:00' },
+  { id: 3, action: 'register', actor_id: 11, actor_email: 'joao.teste@nutre.test', target_id: 11, target_email: 'joao.teste@nutre.test', ip: '189.49.73.29', detail: 'Conta criada', created_at: '2026-10-19 18:47:00' },
+];
+
+const getAdminUsers = () => {
+  const users = readStore(DB_ADMIN_USERS_KEY, null);
+  if (!users || !Array.isArray(users) || users.length === 0) {
+    writeStore(DB_ADMIN_USERS_KEY, INITIAL_ADMIN_USERS);
+    return INITIAL_ADMIN_USERS;
+  }
+  return users;
+};
+
+const getAuditLog = () => {
+  const items = readStore(DB_ADMIN_AUDIT_KEY, null);
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    writeStore(DB_ADMIN_AUDIT_KEY, INITIAL_AUDIT_LOG);
+    return INITIAL_AUDIT_LOG;
+  }
+  return items;
+};
+
+const recordAudit = async ({ action, actor, target, detail }) => {
+  const ip = await getClientIp();
+  const list = getAuditLog();
+  const nextId = list.reduce((m, x) => Math.max(m, x.id || 0), 0) + 1;
+  const entry = {
+    id: nextId,
+    action,
+    actor_id: actor?.id ?? null,
+    actor_email: actor?.email ?? null,
+    target_id: target?.id ?? null,
+    target_email: target?.email ?? null,
+    ip,
+    detail,
+    created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
+  };
+  list.unshift(entry);
+  writeStore(DB_ADMIN_AUDIT_KEY, list.slice(0, 200));
+  return entry;
+};
+
+const touchAdminUser = async (user) => {
+  if (!user || !user.email) return;
+  const ip = await getClientIp();
+  const list = getAdminUsers();
+  const email = user.email.toLowerCase();
+  const existing = list.find((u) => u.email.toLowerCase() === email);
+  const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+  if (existing) {
+    existing.last_access_at = now;
+    existing.last_ip = ip;
+    if (user.name) existing.name = user.name;
+  } else {
+    const nextId = list.reduce((m, x) => Math.max(m, x.id || 0), 0) + 1;
+    list.unshift({
+      id: nextId,
+      name: user.name || email.split('@')[0],
+      email: user.email,
+      role: effectiveRole(user),
+      protected: email === ADMIN_EMAIL,
+      created_at: now,
+      created_ip: ip,
+      last_access_at: now,
+      last_ip: ip,
+      calc_count: 1,
+    });
+  }
+  writeStore(DB_ADMIN_USERS_KEY, list);
+};
 
 const readStore = (key, fallback = []) => {
   try {
@@ -89,6 +196,9 @@ function calculate(v, user) {
   return { bmi, calories, protein, carbs, fats, ...bmiClassification(bmi, user.age) };
 }
 
+const ADMIN_EMAIL = 'leolemes021@gmail.com';
+const effectiveRole = (u) => (String(u?.email || '').trim().toLowerCase() === ADMIN_EMAIL ? 'admin' : (u?.role === 'admin' ? 'admin' : 'user'));
+
 const publicUser = (u) => ({
   id: u.id,
   name: u.name,
@@ -98,6 +208,7 @@ const publicUser = (u) => ({
   weight: u.weight,
   height: u.height,
   activity: u.activity,
+  role: effectiveRole(u),
 });
 
 const supabaseError = (error, fallback = 'Não foi possível conectar ao banco compartilhado. Verifique sua internet e tente novamente.') => {
@@ -461,9 +572,13 @@ export async function handleLocalApi(path, options = {}, token) {
       .single();
     if (calculationError) throw supabaseError(calculationError);
 
+    const registeredUser = profileUser({ id: signUp.user.id, ...profile }, signUp.user);
+    await touchAdminUser(registeredUser);
+    await recordAudit({ action: 'register', actor: registeredUser, target: registeredUser, detail: 'Conta criada' });
+
     return {
       token: signUp.session.access_token,
-      user: profileUser({ id: signUp.user.id, ...profile }, signUp.user),
+      user: registeredUser,
       initialCalculation: normaliseCalculation(savedCalc, profile.age),
     };
   }
@@ -481,7 +596,10 @@ export async function handleLocalApi(path, options = {}, token) {
       .eq('id', login.user.id)
       .single();
     if (profileError) throw supabaseError(profileError, 'Não foi possível carregar o seu perfil.');
-    return { token: login.session.access_token, user: profileUser(profile, login.user) };
+    const loggedUser = profileUser(profile, login.user);
+    await touchAdminUser(loggedUser);
+    await recordAudit({ action: 'login', actor: loggedUser, target: loggedUser, detail: 'Entrada no app' });
+    return { token: login.session.access_token, user: loggedUser };
   }
 
   if (path === '/auth/forgot-check' && method === 'POST') {
@@ -674,6 +792,113 @@ export async function handleLocalApi(path, options = {}, token) {
     if (saveError) throw supabaseError(saveError, 'A resposta foi gerada, mas não foi possível salvar a conversa.');
 
     return { answer, model, toolsUsed: ['precompute_clinical_targets', 'precompute_taco_foods'] };
+  }
+
+  // -------------------------------------------------------------------------
+  // Rotas Administrativas (Painel de Gestão e Auditoria)
+  // -------------------------------------------------------------------------
+  if (path.startsWith('/admin/users') && method === 'GET') {
+    const users = getAdminUsers();
+    const url = new URL(`http://local${path}`);
+    const q = (url.searchParams.get('q') || '').trim().toLowerCase();
+    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
+    const pageSize = Math.min(50, Math.max(1, parseInt(url.searchParams.get('pageSize') || '8', 10)));
+
+    let filtered = users;
+    if (q) {
+      filtered = users.filter((u) => (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q));
+    }
+    const total = filtered.length;
+    const pages = Math.max(1, Math.ceil(total / pageSize));
+    const offset = (page - 1) * pageSize;
+    const paged = filtered.slice(offset, offset + pageSize);
+
+    const now = Date.now();
+    const active24h = users.filter((u) => {
+      if (!u.last_access_at) return false;
+      const t = new Date(String(u.last_access_at).replace(' ', 'T') + 'Z').getTime();
+      return !isNaN(t) && now - t < 24 * 3600 * 1000;
+    }).length;
+
+    const admins = users.filter((u) => u.role === 'admin' || (u.email || '').toLowerCase() === ADMIN_EMAIL).length;
+
+    return {
+      users: paged,
+      total,
+      page,
+      pageSize,
+      pages,
+      stats: { total: users.length, admins, active24h },
+    };
+  }
+
+  if (path.startsWith('/admin/users/') && path.endsWith('/role') && method === 'PATCH') {
+    const match = path.match(/^\/admin\/users\/([^/]+)\/role/);
+    const userId = match ? match[1] : null;
+    const role = body.role;
+    if (!['admin', 'user'].includes(role)) err('Perfil inválido.', 400);
+
+    const users = getAdminUsers();
+    const user = users.find((u) => String(u.id) === String(userId));
+    if (!user) err('Usuário não encontrado.', 404);
+    if (user.email.toLowerCase() === ADMIN_EMAIL) err('O administrador principal não pode ser alterado.', 403);
+
+    user.role = role;
+    writeStore(DB_ADMIN_USERS_KEY, users);
+    await recordAudit({
+      action: role === 'admin' ? 'role_promote' : 'role_demote',
+      actor: { email: ADMIN_EMAIL },
+      target: user,
+      detail: role === 'admin' ? 'Promovido a administrador' : 'Rebaixado para usuário',
+    });
+
+    return { user };
+  }
+
+  if (path.startsWith('/admin/users/') && method === 'DELETE') {
+    const match = path.match(/^\/admin\/users\/([^/]+)$/);
+    const userId = match ? match[1] : null;
+
+    let users = getAdminUsers();
+    const user = users.find((u) => String(u.id) === String(userId));
+    if (!user) err('Usuário não encontrado.', 404);
+    if (user.email.toLowerCase() === ADMIN_EMAIL) err('O administrador principal não pode ser excluído.', 403);
+
+    users = users.filter((u) => String(u.id) !== String(userId));
+    writeStore(DB_ADMIN_USERS_KEY, users);
+    await recordAudit({
+      action: 'user_delete',
+      actor: { email: ADMIN_EMAIL },
+      target: user,
+      detail: `Conta excluída (${user.name})`,
+    });
+
+    return { ok: true };
+  }
+
+  if (path.startsWith('/admin/audit') && method === 'GET') {
+    const items = getAuditLog();
+    const url = new URL(`http://local${path}`);
+    const userId = url.searchParams.get('userId');
+    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
+    const pageSize = Math.min(50, Math.max(1, parseInt(url.searchParams.get('pageSize') || '10', 10)));
+
+    let filtered = items;
+    if (userId) {
+      filtered = items.filter((i) => String(i.actor_id) === String(userId) || String(i.target_id) === String(userId));
+    }
+    const total = filtered.length;
+    const pages = Math.max(1, Math.ceil(total / pageSize));
+    const offset = (page - 1) * pageSize;
+    const paged = filtered.slice(offset, offset + pageSize);
+
+    return {
+      items: paged,
+      total,
+      page,
+      pageSize,
+      pages,
+    };
   }
 
   return {};
