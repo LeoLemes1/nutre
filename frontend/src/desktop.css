@@ -1,0 +1,1509 @@
+/* ==========================================================================
+   ISOLAMENTO TOTAL DO MOBILE (< 960px)
+   Todos os elementos .desktop-only ficam ocultos e os wrappers usam
+   display: contents para que o DOM mobile permaneça 100% idêntico.
+   ========================================================================== */
+@media (max-width: 959px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .lp-above-fold,
+  .lp-hero-copy,
+  .lp-hero-bento,
+  .lp-section-head,
+  .lp-mode-media-group,
+  .lp-dual-bottom,
+  .lp-bottom-cta-inner,
+  .lp-bottom-cta-action,
+  .lp-footer-nav,
+  .lp-topbar-actions,
+  .auth-form-col,
+  .calc-main-col {
+    display: contents;
+  }
+}
+
+/* ==========================================================================
+   VERSÃO DESKTOP (>= 960px) — 100% DA TELA (FULL-BLEED, ZERO CARD GIGANTE)
+   ========================================================================== */
+@media (min-width: 960px) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .public-wrap {
+    display: block !important;
+    width: 100% !important;
+    min-height: 100svh !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* ------------------------------------------------------------------------
+     1. LANDING PAGE DESKTOP — 100% FULL-WIDTH WEBSITE
+     ------------------------------------------------------------------------ */
+  .landing.lp-root {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 100svh !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    display: block !important;
+  }
+
+  /* Barra de navegação fixa ocupando 100% da largura */
+  .lp-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    width: 100%;
+    height: 76px;
+    margin: 0 !important;
+    padding: 0 6vw;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid #dfece9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .lp-above-fold {
+    min-height: calc(100svh - 76px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .lp-topbar .landing-mark {
+    font-size: 24px;
+  }
+
+  .lp-desktop-nav {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+  .lp-desktop-nav a {
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 14.5px;
+    font-weight: 600;
+    transition: color 0.18s;
+  }
+  .lp-desktop-nav a:hover {
+    color: var(--teal);
+    text-decoration: none;
+  }
+
+  .lp-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .lp-login-pill {
+    font-size: 14px;
+    padding: 10px 22px;
+  }
+
+  .lp-signup-pill {
+    border: 0;
+    background: var(--teal);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 22px;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: background 0.18s, transform 0.18s;
+  }
+  .lp-signup-pill:hover {
+    background: var(--teal-dark);
+    transform: translateY(-1px);
+  }
+
+  /* HERO FULL-BLEED COM BENTO DE 3 FOTOS */
+  .lp-hero {
+    flex: 1;
+    width: 100%;
+    padding: 48px 6vw 52px;
+    background: radial-gradient(circle at 82% 22%, #d8efe9 0%, #f4faf8 52%, #ffffff 100%);
+    border-bottom: 1px solid #e2eeeb;
+    display: grid;
+    grid-template-columns: 1.02fr 1.18fr;
+    column-gap: 56px;
+    align-items: center;
+    align-content: center;
+  }
+
+  .lp-hero-copy {
+    display: block;
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .lp-hero .eyebrow {
+    font-size: 13px;
+    letter-spacing: 0.12em;
+  }
+
+  .lp-hero h1 {
+    font-size: clamp(42px, 3.8vw, 56px);
+    line-height: 1.05;
+    margin-top: 10px;
+  }
+
+  .lp-hero .lead {
+    font-size: 18px;
+    line-height: 1.58;
+    margin-top: 18px;
+    max-width: 600px;
+  }
+
+  .lp-hero-highlights {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 22px;
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px dashed #c8ddd9;
+  }
+  .lp-hero-highlights > div {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+  .lp-hero-highlights svg {
+    color: var(--teal);
+    flex: none;
+  }
+  .lp-hero-highlights b {
+    color: var(--ink);
+  }
+
+  .lp-actions {
+    grid-column: 1;
+    grid-row: 2;
+    display: flex;
+    gap: 14px;
+    margin: 28px 0 0 !important;
+    max-width: 520px;
+  }
+  .lp-actions .button {
+    width: auto;
+    flex: 1;
+    min-height: 56px;
+    font-size: 15.5px;
+    padding: 0 24px;
+  }
+
+  .lp-hero-bento {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    display: grid;
+    grid-template-columns: 1.25fr 0.95fr;
+    gap: 16px;
+    height: 440px;
+  }
+
+  .lp-hero-visual {
+    height: 100%;
+    margin: 0;
+    border-radius: 24px;
+  }
+
+  .lp-float-card {
+    padding: 9px 13px;
+    border-radius: 13px;
+    gap: 9px;
+    max-width: 86%;
+  }
+  .lp-float-card.top-left {
+    top: 16px;
+    left: 16px;
+  }
+  .lp-float-card.bottom-right {
+    bottom: 16px;
+    right: 16px;
+  }
+  .lp-float-icon {
+    width: 30px;
+    height: 30px;
+  }
+  .lp-float-text b {
+    font-size: 12.5px;
+  }
+  .lp-float-text span {
+    font-size: 11px;
+  }
+
+  .lp-hero-side-photos {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 16px;
+    height: 100%;
+  }
+
+  .lp-side-photo-card {
+    position: relative;
+    border-radius: 22px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: 0 12px 28px rgba(22, 50, 58, 0.1);
+    background: #e6f2ef;
+  }
+  .lp-side-photo-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.35s ease;
+  }
+  .lp-side-photo-card:hover img {
+    transform: scale(1.04);
+  }
+  .lp-side-photo-caption {
+    position: absolute;
+    inset: auto 0 0 0;
+    padding: 28px 14px 12px;
+    background: linear-gradient(180deg, transparent 0%, rgba(14, 34, 40, 0.84) 100%);
+    color: #fff;
+  }
+  .lp-side-photo-caption b {
+    display: block;
+    font-size: 13px;
+    line-height: 1.25;
+  }
+  .lp-side-photo-caption span {
+    display: block;
+    font-size: 11px;
+    opacity: 0.88;
+    margin-top: 2px;
+  }
+
+  /* FAIXA FULL-BLEED DE MÉTRICAS REAIS */
+  .lp-stats {
+    width: 100%;
+    margin: 0 !important;
+    padding: 34px 6vw;
+    background: #133c39;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+  .lp-stat-card {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 18px;
+    padding: 20px 22px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .lp-stat-card strong {
+    font-size: 30px;
+    color: #7ee2d6;
+  }
+  .lp-stat-card span {
+    font-size: 13.5px;
+    color: rgba(255, 255, 255, 0.88);
+    margin-top: 6px;
+  }
+
+  /* SEÇÕES FULL-WIDTH DA LANDING PAGE */
+  .lp-section {
+    margin: 0 !important;
+    padding: 76px 6vw;
+  }
+  .lp-section h2 {
+    font-size: clamp(28px, 2.6vw, 36px);
+  }
+  .lp-section-sub {
+    font-size: 16px;
+    margin: 8px 0 28px;
+    max-width: 720px;
+  }
+
+  /* SEÇÃO: OS 2 MODOS DO NUTRÊ */
+  .lp-section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+  .lp-section-head .lp-section-sub {
+    margin-bottom: 0;
+  }
+  .lp-mode-switch {
+    width: 380px;
+    margin-bottom: 0;
+    flex: none;
+  }
+
+  .lp-mode-card {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    border-radius: 26px;
+    box-shadow: 0 18px 42px rgba(22, 50, 58, 0.07);
+  }
+
+  .lp-mode-media-group {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 12px;
+    padding: 16px;
+    background: #f3f9f8;
+  }
+  .lp-mode-card.nutri .lp-mode-media-group {
+    background: #fdf4eb;
+  }
+
+  .lp-mode-media {
+    height: 100%;
+    min-height: 340px;
+    border-radius: 18px;
+    overflow: hidden;
+  }
+
+  .lp-mode-body {
+    padding: 40px 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .lp-mode-body h3 {
+    font-size: 26px;
+    margin-bottom: 18px;
+  }
+  .lp-feature-list {
+    gap: 16px;
+  }
+  .lp-feature-list li {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .lp-mode-cta {
+    margin-top: 26px;
+    max-width: 340px;
+  }
+
+  /* SEÇÃO: VITRINE DE 6 ALIMENTOS TACO/UNICAMP */
+  .lp-section-foods {
+    background: #fdf8f3;
+    border-top: 1px solid #f0e1d3;
+    border-bottom: 1px solid #f0e1d3;
+  }
+
+  .lp-food-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+  @media (min-width: 1400px) {
+    .lp-food-grid {
+      grid-template-columns: repeat(6, 1fr);
+      gap: 16px;
+    }
+  }
+
+  .lp-food-card {
+    border-radius: 20px;
+    box-shadow: 0 10px 24px rgba(44, 30, 22, 0.05);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+  }
+  .lp-food-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 32px rgba(44, 30, 22, 0.1);
+  }
+  .lp-food-img-wrap {
+    height: 175px;
+  }
+  .lp-food-info {
+    padding: 16px;
+  }
+  .lp-food-info > b {
+    font-size: 16px;
+  }
+  .lp-food-info > small {
+    font-size: 12.5px;
+    margin: 5px 0 12px;
+  }
+  .lp-food-macros {
+    padding: 8px 6px;
+  }
+  .lp-food-macros span {
+    font-size: 11px;
+  }
+  .lp-food-macros span b {
+    font-size: 13px;
+  }
+
+  /* SEÇÃO: COMO FUNCIONA (3 CARDS COM FOTOS GRANDES) */
+  .lp-journey {
+    background: #ffffff;
+    border-bottom: 1px solid #e4efec;
+  }
+  .lp-journey-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .lp-journey-card {
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 10px 28px rgba(22, 50, 58, 0.05);
+    display: flex;
+    flex-direction: column;
+  }
+  .lp-journey-img {
+    position: relative;
+    height: 210px;
+    overflow: hidden;
+  }
+  .lp-journey-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .lp-journey-step {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: var(--teal);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 5px 11px;
+    border-radius: 999px;
+  }
+  .lp-journey-tag {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--ink);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .lp-journey-body {
+    padding: 22px 24px 26px;
+  }
+  .lp-journey-body h3 {
+    font-family: Fraunces, Georgia, serif;
+    font-size: 21px;
+    margin: 0 0 8px;
+    color: var(--ink);
+  }
+  .lp-journey-body p {
+    margin: 0;
+    font-size: 14.5px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* SEÇÃO DUPLA: IMC POR IDADE + FONTES CIENTÍFICAS LADO A LADO */
+  .lp-dual-bottom {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 36px;
+    padding: 76px 6vw;
+    background: #f6faf9;
+    border-bottom: 1px solid #e1ece9;
+    align-items: stretch;
+  }
+  .lp-dual-bottom > .lp-section {
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+  }
+  .lp-age-card {
+    flex: 1;
+    padding: 32px;
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .lp-age-desc {
+    font-size: 15px;
+  }
+  .lp-age-compare {
+    gap: 16px;
+  }
+  .lp-age-box {
+    padding: 20px;
+    border-radius: 16px;
+  }
+  .lp-age-box strong {
+    font-size: 26px;
+  }
+  .lp-age-box p {
+    font-size: 13.5px;
+  }
+
+  .lp-sources-grid {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: 16px;
+  }
+  .lp-source-item {
+    flex: 1;
+    padding: 18px 20px;
+    border-radius: 18px;
+    align-items: center;
+  }
+  .lp-source-item b {
+    font-size: 15px;
+  }
+  .lp-source-item span {
+    font-size: 13.5px;
+  }
+
+  /* BANNER CTA FINAL FULL-WIDTH */
+  .lp-bottom-cta {
+    margin: 0 !important;
+    padding: 64px 6vw;
+    border-radius: 0 !important;
+    border: 0 !important;
+    background: linear-gradient(135deg, #134e48 0%, #1c7c74 100%);
+    color: #fff;
+    text-align: left;
+  }
+  .lp-bottom-cta-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+  }
+  .lp-bottom-cta h2 {
+    font-size: 36px;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+  .lp-bottom-cta p {
+    font-size: 16.5px;
+    color: rgba(255, 255, 255, 0.88);
+    max-width: 620px;
+    margin: 0;
+  }
+  .lp-bottom-cta-action {
+    flex: none;
+    width: 340px;
+    text-align: center;
+  }
+  .lp-bottom-cta .button {
+    background: #ffffff;
+    color: #134e48;
+    min-height: 56px;
+    font-size: 16px;
+  }
+  .lp-bottom-cta .button:hover {
+    background: #eaf5f3;
+  }
+  .lp-bottom-cta .lp-trust-row {
+    color: rgba(255, 255, 255, 0.85);
+    margin-top: 12px;
+  }
+  .lp-bottom-cta .lp-trust-row svg {
+    color: #8bf0e4;
+  }
+
+  /* RODAPÉ FULL-WIDTH */
+  .lp-footer-links {
+    margin: 0 !important;
+    padding: 28px 6vw;
+    background: #0e2e2b;
+    color: rgba(255, 255, 255, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .lp-footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    font-size: 14px;
+  }
+  .lp-footer-brand svg {
+    color: #6fe3d6;
+  }
+  .lp-footer-brand span {
+    color: rgba(255, 255, 255, 0.68);
+  }
+  .lp-footer-nav {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .lp-footer-links button {
+    color: #8bf0e4;
+    font-size: 14px;
+  }
+
+  /* ------------------------------------------------------------------------
+     2. TELAS DE LOGIN, CADASTRO E RECUPERAR SENHA — SPLIT-SCREEN 100% DA TELA
+     ------------------------------------------------------------------------ */
+  .auth-page:not(.legal-page) {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 100svh !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    display: grid !important;
+    grid-template-columns: 1.08fr 0.92fr;
+    align-items: stretch;
+  }
+
+  .auth-visual-aside {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 44px 5vw;
+    color: #fff;
+    background: #103835;
+  }
+  .auth-aside-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.38;
+    transform: scale(1.03);
+  }
+  .auth-aside-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(155deg, rgba(13, 48, 44, 0.92) 0%, rgba(22, 88, 82, 0.78) 55%, rgba(14, 38, 36, 0.94) 100%);
+  }
+  .auth-aside-content {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 32px;
+  }
+  .auth-aside-brand {
+    align-self: flex-start;
+    border: 0;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 20px;
+    text-decoration: none;
+  }
+  .auth-aside-pill {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #8bf0e4;
+    margin-bottom: 12px;
+  }
+  .auth-aside-middle h2 {
+    font-size: clamp(32px, 3vw, 44px);
+    line-height: 1.08;
+    color: #fff;
+    max-width: 520px;
+  }
+  .auth-aside-middle p {
+    font-size: 16px;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.86);
+    max-width: 520px;
+    margin: 16px 0 28px;
+  }
+  .auth-aside-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    max-width: 540px;
+  }
+  .auth-aside-mini {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+  .auth-aside-mini img {
+    width: 54px;
+    height: 54px;
+    border-radius: 11px;
+    object-fit: cover;
+    flex: none;
+  }
+  .auth-aside-mini b {
+    display: block;
+    font-size: 13px;
+    color: #fff;
+  }
+  .auth-aside-mini span {
+    display: block;
+    font-size: 11.5px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 2px;
+    line-height: 1.3;
+  }
+  .auth-aside-foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.78);
+  }
+  .auth-aside-foot svg {
+    color: #8bf0e4;
+    flex: none;
+  }
+
+  .auth-form-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 48px 7vw;
+    background: #ffffff;
+    max-width: 640px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* Termos e Privacidade ocupando 100% da tela */
+  .auth-page.legal-page {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 100svh !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 56px 10vw !important;
+  }
+  .auth-page.legal-page .legal-list {
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .auth-page.legal-page > .button {
+    max-width: 300px;
+  }
+
+  /* ------------------------------------------------------------------------
+     3. SHELL AUTENTICADO DESKTOP — 100% DA TELA (ZERO BORDAS EXTERNAS)
+     ------------------------------------------------------------------------ */
+  .app-shell {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 100svh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    display: grid;
+    grid-template-columns: 272px minmax(0, 1fr);
+    grid-template-rows: 74px minmax(0, 1fr);
+    background: #f6faf9;
+  }
+
+  .app-shell.theme-nutrition {
+    background: #fdf9f5;
+  }
+
+  .app-shell > header {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    margin: 0 !important;
+    padding: 0 40px;
+    border-bottom: 1px solid var(--line);
+    background: #ffffff;
+    z-index: 20;
+  }
+
+  .app-shell > .bottom-nav {
+    grid-column: 1;
+    grid-row: 2;
+    position: sticky !important;
+    top: 74px !important;
+    height: calc(100svh - 74px);
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 26px 18px !important;
+    border-top: 0 !important;
+    border-right: 1px solid var(--line);
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    display: flex !important;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+
+  .app-shell > .bottom-nav button {
+    min-height: 50px;
+    width: 100%;
+    display: flex !important;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 13px;
+    padding: 0 16px;
+    border-radius: 14px;
+    font-size: 14.5px;
+    font-weight: 600;
+    transition: background 0.18s, color 0.18s;
+  }
+
+  .app-shell > .bottom-nav button:hover {
+    background: var(--mist);
+    color: var(--teal);
+  }
+
+  .app-shell > .bottom-nav button.active {
+    background: var(--teal);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 6px 16px rgba(22, 50, 58, 0.14);
+  }
+
+  .nav-sidebar-card {
+    margin-top: auto;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--mist);
+  }
+  .nav-sidebar-card img {
+    width: 100%;
+    height: 110px;
+    object-fit: cover;
+    display: block;
+  }
+  .nav-sidebar-card > div {
+    padding: 12px 13px;
+  }
+  .nav-sidebar-card b {
+    display: block;
+    font-size: 13px;
+    color: var(--ink);
+  }
+  .nav-sidebar-card span {
+    display: block;
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 3px;
+    line-height: 1.35;
+  }
+
+  .app-shell > .screen {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 40px 5vw 56px !important;
+    overflow-y: auto;
+  }
+
+  /* ------------------------------------------------------------------------
+     4. DASHBOARD DESKTOP COM BANNER FOTOGRÁFICO + 2 COLUNAS AMPLAS
+     ------------------------------------------------------------------------ */
+  .screen.page-home {
+    display: grid;
+    grid-template-columns: 1.08fr 0.92fr;
+    column-gap: 36px;
+    align-content: start;
+  }
+
+  .dash-desktop-hero {
+    grid-column: 1 / -1;
+    position: relative;
+    height: 210px;
+    border-radius: 22px;
+    overflow: hidden;
+    margin-bottom: 28px;
+    border: 1px solid var(--line);
+    box-shadow: 0 12px 30px rgba(22, 50, 58, 0.08);
+  }
+  .dash-desktop-hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .dash-desktop-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(16, 38, 44, 0.88) 0%, rgba(16, 38, 44, 0.58) 55%, rgba(16, 38, 44, 0.15) 100%);
+  }
+  .app-shell.theme-nutrition .dash-desktop-hero-overlay {
+    background: linear-gradient(90deg, rgba(44, 24, 14, 0.9) 0%, rgba(44, 24, 14, 0.58) 55%, rgba(44, 24, 14, 0.15) 100%);
+  }
+  .dash-desktop-hero-content {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 28px 36px;
+    color: #fff;
+    max-width: 680px;
+  }
+  .dash-desktop-pill {
+    display: inline-block;
+    align-self: flex-start;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(6px);
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+  }
+  .dash-desktop-hero-content h2 {
+    font-size: 28px;
+    color: #fff;
+    margin: 0 0 6px;
+  }
+  .dash-desktop-hero-content p {
+    margin: 0;
+    font-size: 14.5px;
+    color: rgba(255, 255, 255, 0.88);
+    line-height: 1.45;
+  }
+
+  .screen.page-home > .eyebrow,
+  .screen.page-home > h1,
+  .screen.page-home > .subhead {
+    grid-column: 1 / -1;
+  }
+  .screen.page-home > h1 {
+    font-size: 38px;
+    margin-top: 2px;
+  }
+  .screen.page-home > .subhead {
+    margin-bottom: 24px;
+    font-size: 15.5px;
+  }
+  .screen.page-home > .summary-card,
+  .screen.page-home > .macro-card,
+  .screen.page-home > .loading-card {
+    grid-column: 1;
+    margin-top: 0 !important;
+    margin-bottom: 16px;
+  }
+  .screen.page-home > .section {
+    grid-column: 2;
+    grid-row: 5 / 8;
+    margin-top: 0 !important;
+  }
+  .screen.page-home > .section h2 {
+    margin-top: 0;
+  }
+
+  /* ------------------------------------------------------------------------
+     5. TABELA DE ALIMENTOS DESKTOP — GRID LARGO DE 2 A 3 COLUNAS
+     ------------------------------------------------------------------------ */
+  .foods-page > div > h1 {
+    font-size: 36px;
+  }
+  .diet-banner {
+    padding: 18px 24px;
+  }
+  .foods-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+  @media (min-width: 1360px) {
+    .foods-list {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .foods-pagination {
+    max-width: 440px;
+    margin: 22px auto 8px;
+  }
+  .foods-page > .page-footer {
+    max-width: 400px;
+  }
+
+  /* ------------------------------------------------------------------------
+     6. CALCULADORA CENTRALIZADA E ENRIQUECIDA NO DESKTOP
+     ------------------------------------------------------------------------ */
+  .screen.page-calculator {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .calc-page {
+    flex: 0 1 auto !important;
+    width: 100%;
+    max-width: 1040px;
+    margin: auto;
+    display: grid !important;
+    grid-template-columns: 1.08fr 0.92fr;
+    gap: 32px;
+    align-items: stretch;
+  }
+
+  .calc-main-col {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 26px;
+    padding: 36px 38px;
+    box-shadow: 0 14px 36px rgba(22, 50, 58, 0.06);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .calc-page h1 {
+    font-size: 36px;
+    margin-top: 4px;
+  }
+
+  .calc-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    align-content: start;
+    margin-top: 24px;
+    flex: 0 1 auto;
+  }
+  .calc-form > label:nth-child(3),
+  .calc-form > .form-error,
+  .calc-form > .page-footer {
+    grid-column: 1 / -1;
+  }
+  .calc-form > .page-footer {
+    margin-top: 8px;
+    padding-top: 4px;
+  }
+  .calc-form > .page-footer .button {
+    width: 100%;
+    min-height: 54px;
+  }
+
+  .calc-desktop-aside {
+    border: 1px solid var(--line);
+    border-radius: 26px;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 14px 36px rgba(22, 50, 58, 0.06);
+    display: flex;
+    flex-direction: column;
+  }
+  .calc-aside-photo {
+    position: relative;
+    height: 195px;
+    overflow: hidden;
+    background: #e5f2ef;
+  }
+  .calc-aside-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .calc-aside-badge {
+    position: absolute;
+    bottom: 12px;
+    left: 14px;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--teal);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 5px 11px;
+    border-radius: 999px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+  }
+  .calc-aside-body {
+    padding: 24px 26px 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+  }
+  .calc-aside-body h3 {
+    font-family: Fraunces, Georgia, serif;
+    font-size: 21px;
+    color: var(--ink);
+    margin: 0 0 8px;
+  }
+  .calc-aside-body p {
+    margin: 0 0 16px;
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  .calc-aside-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 13px;
+  }
+  .calc-aside-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13.5px;
+    color: var(--muted);
+    line-height: 1.42;
+  }
+  .calc-aside-list li svg {
+    color: var(--teal);
+    flex: none;
+    margin-top: 2px;
+  }
+  .calc-aside-list li b {
+    color: var(--ink);
+  }
+
+  /* ------------------------------------------------------------------------
+     7. RESULTADO, CHAT, HISTÓRICO E UBS DESKTOP
+     ------------------------------------------------------------------------ */
+  .screen.page-result {
+    display: grid;
+    grid-template-columns: 1fr 1.15fr;
+    column-gap: 32px;
+    align-content: start;
+  }
+  .screen.page-result > .eyebrow,
+  .screen.page-result > h1 {
+    grid-column: 1 / -1;
+  }
+  .screen.page-result > h1 {
+    font-size: 36px;
+    margin-bottom: 22px;
+  }
+  .screen.page-result > .result-card,
+  .screen.page-result > .macro-card,
+  .screen.page-result > .risk-banner,
+  .screen.page-result > .button,
+  .screen.page-result > .disclaimer {
+    grid-column: 1;
+  }
+  .screen.page-result > .result-card {
+    margin-top: 0;
+    background: #fff;
+  }
+  .screen.page-result > .bmi-table-card {
+    grid-column: 2;
+    grid-row: 3 / 8;
+    margin-top: 0;
+    align-self: start;
+    background: #fff;
+  }
+
+  .app-shell.is-chat {
+    height: 100svh !important;
+    max-height: 100svh !important;
+  }
+  .app-shell.is-chat > header {
+    margin-bottom: 0 !important;
+  }
+  .app-shell.is-chat > .screen {
+    padding: 28px 5vw 24px !important;
+    overflow: hidden;
+  }
+  .chat-page {
+    max-width: 1020px;
+    width: 100%;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 24px 28px 18px;
+  }
+  .bubble {
+    max-width: 72%;
+    font-size: 14.5px;
+    padding: 14px 16px;
+  }
+
+  .history-page h1,
+  .screen.page-support > h1 {
+    font-size: 36px;
+  }
+  .history-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .history-page > .page-footer {
+    max-width: 320px;
+  }
+
+  .ubs-map {
+    height: 380px;
+  }
+  .ubs-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .ubs-maps-btn {
+    max-width: 340px;
+  }
+
+  /* ------------------------------------------------------------------------
+     8. TELA DE CONTA (PROFILE) REDESENHADA NO DESKTOP (EMPILHADA E LARGA)
+     ------------------------------------------------------------------------ */
+  .profile-page {
+    max-width: 1120px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* Oculta os elementos simples do mobile na tela de Conta do Desktop */
+  .profile-body > .eyebrow,
+  .profile-body > h1,
+  .profile-body > .subhead,
+  .profile-body > .data-section,
+  .profile-page > .profile-footer {
+    display: none !important;
+  }
+
+  .profile-body {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .profile-desktop-card {
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 26px;
+    overflow: hidden;
+    box-shadow: 0 14px 36px rgba(22, 50, 58, 0.06);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .profile-desktop-banner {
+    background: linear-gradient(135deg, #134e48 0%, #1c7c74 100%);
+    padding: 30px 34px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .app-shell.theme-nutrition .profile-desktop-banner {
+    background: linear-gradient(135deg, #9a4512 0%, #d96b27 100%);
+  }
+
+  .profile-desktop-user {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    min-width: 0;
+  }
+
+  .profile-desktop-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.65);
+    color: #fff;
+    font-family: Fraunces, Georgia, serif;
+    font-size: 30px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    text-transform: uppercase;
+  }
+
+  .profile-desktop-id {
+    min-width: 0;
+  }
+  .profile-desktop-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.18);
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 6px;
+  }
+  .profile-desktop-id h2 {
+    font-size: 28px;
+    color: #fff;
+    margin: 0;
+    line-height: 1.15;
+  }
+  .profile-desktop-id p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.86);
+  }
+
+  .profile-desktop-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: none;
+  }
+  .profile-desktop-actions .button {
+    width: auto;
+    min-height: 46px;
+    padding: 0 18px;
+    font-size: 14px;
+    background: #ffffff;
+    color: #134e48;
+    border-color: #ffffff;
+  }
+  .profile-desktop-actions .button:hover {
+    background: #eaf5f3;
+  }
+  .app-shell.theme-nutrition .profile-desktop-actions .button {
+    color: #9a4512;
+  }
+  .profile-desktop-actions .button.secondary {
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.45);
+  }
+  .profile-desktop-actions .button.secondary:hover {
+    background: rgba(255, 255, 255, 0.24);
+  }
+
+  .profile-desktop-stats {
+    padding: 24px 30px 20px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .profile-stat-tile {
+    background: #f7fbfa;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .app-shell.theme-nutrition .profile-stat-tile {
+    background: #fdf8f4;
+  }
+
+  .profile-tile-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: var(--mist);
+    color: var(--teal);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+  }
+  .profile-stat-tile small {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .profile-stat-tile b {
+    display: block;
+    font-size: 15px;
+    color: var(--ink);
+    margin-top: 3px;
+    line-height: 1.25;
+  }
+
+  .profile-desktop-latest {
+    margin: 0 30px 26px;
+    padding: 16px 22px;
+    border-radius: 16px;
+    background: var(--mist);
+    border: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: center;
+    gap: 18px;
+  }
+  .profile-latest-item + .profile-latest-item {
+    border-left: 1px solid var(--line);
+    padding-left: 18px;
+  }
+  .profile-desktop-latest small {
+    display: block;
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .profile-desktop-latest strong {
+    font-family: Fraunces, Georgia, serif;
+    font-size: 20px;
+    color: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .profile-desktop-latest b {
+    display: block;
+    font-size: 14.5px;
+    color: var(--ink);
+    margin-top: 2px;
+  }
+  .profile-desktop-latest .pill {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    padding: 3px 9px;
+    font-size: 11.5px;
+  }
+
+  .profile-body > .sources-section:not(.data-section) {
+    margin-top: 0;
+    background: #ffffff;
+    border: 1px solid var(--line);
+    border-radius: 26px;
+    padding: 30px 32px;
+    box-shadow: 0 14px 36px rgba(22, 50, 58, 0.05);
+  }
+  .profile-body > .sources-section:not(.data-section) .sources-head {
+    margin-bottom: 20px;
+  }
+  .profile-body > .sources-section:not(.data-section) .sources-head h2 {
+    font-size: 24px;
+  }
+  .sources-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+}

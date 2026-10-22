@@ -6,6 +6,7 @@ import 'leaflet/dist/leaflet.css';
 import './styles.css';
 import './register.css';
 import './ios.css';
+import './desktop.css';
 
 const api = async (path, options = {}, token) => {
   const res = await fetch(`/api${path}`, { ...options, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(options.headers || {}) } });
@@ -102,7 +103,102 @@ const LANDING_FOODS = [
     source: 'TACO · UNICAMP',
     img: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=500&q=80',
   },
+  {
+    name: 'Aveia em flocos + Frutas',
+    portion: '2 colheres de sopa (30g) ≈ 118 kcal',
+    kcal: 394,
+    prot: '13,9g',
+    carb: '66,6g',
+    fat: '8,5g',
+    source: 'TACO · UNICAMP',
+    img: 'https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?auto=format&fit=crop&w=800&q=80',
+    desktopOnly: true,
+  },
+  {
+    name: 'Salada fresca & Hortaliças',
+    portion: 'Prato fundo completo (100g) ≈ 22 kcal',
+    kcal: 22,
+    prot: '1,6g',
+    carb: '4,1g',
+    fat: '0,2g',
+    source: 'TACO · UNICAMP',
+    img: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80',
+    desktopOnly: true,
+  },
 ];
+
+const DESKTOP_JOURNEY = [
+  {
+    step: '01',
+    title: 'Avaliação Antropométrica Real',
+    desc: 'Calculamos seu IMC separando critérios de adultos (OMS) e idosos 60+ (SISVAN/MS), além da Taxa Metabólica Basal pela equação de Mifflin-St Jeor.',
+    img: 'https://images.unsplash.com/photo-1505576399279-565b52d4ac71?auto=format&fit=crop&w=900&q=80',
+    tag: 'OMS & SISVAN',
+  },
+  {
+    step: '02',
+    title: 'Cardápio com o que há em casa',
+    desc: 'Sem ingredientes caros: o Guia IA cruza suas calorias diárias e rotina de exercícios com os 140 alimentos da tabela TACO/UNICAMP e TBCA/USP.',
+    img: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=80',
+    tag: 'TACO & GUIA IA',
+  },
+  {
+    step: '03',
+    title: 'Apoio Presencial na Rede SUS',
+    desc: 'Em casos de alerta nutricional, localize Unidades Básicas de Saúde (UBS) próximas no mapa interativo para acompanhamento gratuito.',
+    img: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1000&q=80',
+    tag: 'REDE PÚBLICA SUS',
+  },
+];
+
+function AuthVisualAside({ go }) {
+  return (
+    <aside className="auth-visual-aside desktop-only" aria-hidden="true">
+      <img
+        src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1000&q=80"
+        alt=""
+        className="auth-aside-bg"
+      />
+      <div className="auth-aside-overlay" />
+      <div className="auth-aside-content">
+        <button type="button" className="auth-aside-brand" onClick={() => go('landing')}>
+          <HeartPulse size={24} />
+          <b>Nutrê</b>
+        </button>
+
+        <div className="auth-aside-middle">
+          <span className="auth-aside-pill">PLATAFORMA GRATUITA DE SAÚDE & NUTRIÇÃO</span>
+          <h2>Ciência nutricional acessível para a vida real.</h2>
+          <p>
+            Avaliação de IMC por faixa etária (OMS e SISVAN/MS), tabela oficial com 140 alimentos brasileiros (TACO/UNICAMP) e assistente inteligente para montar refeições que cabem no seu bolso.
+          </p>
+
+          <div className="auth-aside-cards">
+            <div className="auth-aside-mini">
+              <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80" alt="" />
+              <div>
+                <b>Tabela TACO · UNICAMP</b>
+                <span>140 alimentos por 100g e medida caseira</span>
+              </div>
+            </div>
+            <div className="auth-aside-mini">
+              <img src="https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=500&q=80" alt="" />
+              <div>
+                <b>Guia IA + Mapa de UBS</b>
+                <span>Dieta acessível e rede pública de saúde</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="auth-aside-foot">
+          <ShieldCheck size={17} />
+          <span>Dados protegidos pela LGPD · Referências OMS, Ministério da Saúde, UNICAMP e USP</span>
+        </div>
+      </div>
+    </aside>
+  );
+}
 
 function Landing({ go }) {
   const [previewMode, setPreviewMode] = useState('health');
@@ -114,35 +210,72 @@ function Landing({ go }) {
         <HeartPulse size={22} />
         <b>Nutrê</b>
       </div>
-      <button type="button" className="lp-login-pill" onClick={() => go('login')}>Entrar</button>
+      <nav className="lp-desktop-nav desktop-only" aria-label="Seções da página">
+        <a href="#lp-modos">Os 2 Modos</a>
+        <a href="#lp-alimentos">Tabela TACO (140 alimentos)</a>
+        <a href="#lp-jornada">Como funciona</a>
+        <a href="#lp-idade">IMC por Idade</a>
+        <a href="#lp-fontes">Fontes Científicas</a>
+      </nav>
+      <div className="lp-topbar-actions">
+        <button type="button" className="lp-login-pill" onClick={() => go('login')}>Entrar</button>
+        <button type="button" className="lp-signup-pill desktop-only" onClick={() => go('register')}>Criar conta gratuita</button>
+      </div>
     </header>
 
-    <section className="lp-hero">
-      <p className="eyebrow">SAÚDE E NUTRIÇÃO BASEADA EM EVIDÊNCIAS</p>
-      <h1>Alimentação real e cuidado que cabem na sua rotina.</h1>
-      <p className="lead">
-        Calcule seu IMC com os critérios oficiais para a sua idade, consulte <b>140 alimentos</b> analisados em laboratório e monte dietas acessíveis com o <b>Guia IA</b>.
-      </p>
+    <div className="lp-above-fold">
+      <section className="lp-hero">
+      <div className="lp-hero-copy">
+        <p className="eyebrow">SAÚDE E NUTRIÇÃO BASEADA EM EVIDÊNCIAS</p>
+        <h1>Alimentação real e cuidado que cabem na sua rotina.</h1>
+        <p className="lead">
+          Calcule seu IMC com os critérios oficiais para a sua idade, consulte <b>140 alimentos</b> analisados em laboratório e monte dietas acessíveis com o <b>Guia IA</b>.
+        </p>
+        <div className="lp-hero-highlights desktop-only">
+          <div><CheckCircle2 size={17} /><span>Critérios oficiais <b>OMS</b> e <b>SISVAN/MS</b></span></div>
+          <div><CheckCircle2 size={17} /><span>Tabela <b>TACO/UNICAMP</b> e <b>TBCA/USP</b></span></div>
+          <div><CheckCircle2 size={17} /><span>Mapa interativo de <b>UBS/SUS</b> próximas</span></div>
+        </div>
+      </div>
 
-      <div className="lp-hero-visual">
-        <img
-          src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=80"
-          alt="Prato equilibrado com alimentos frescos, proteínas, grãos e vegetais"
-          className="lp-hero-img"
-        />
-        <div className="lp-hero-overlay" />
-        <div className="lp-float-card top-left">
-          <div className="lp-float-icon health"><HeartPulse size={14} /></div>
-          <div className="lp-float-text">
-            <b>IMC 22,1 kg/m² · Adequado</b>
-            <span>Critério OMS e SISVAN/MS por idade</span>
+      <div className="lp-hero-bento">
+        <div className="lp-hero-visual">
+          <img
+            src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=80"
+            alt="Prato equilibrado com alimentos frescos, proteínas, grãos e vegetais"
+            className="lp-hero-img"
+          />
+          <div className="lp-hero-overlay" />
+          <div className="lp-float-card top-left">
+            <div className="lp-float-icon health"><HeartPulse size={14} /></div>
+            <div className="lp-float-text">
+              <b>IMC 22,1 kg/m² · Adequado</b>
+              <span>Critério OMS e SISVAN/MS por idade</span>
+            </div>
+          </div>
+          <div className="lp-float-card bottom-right">
+            <div className="lp-float-icon nutri"><Flame size={14} /></div>
+            <div className="lp-float-text">
+              <b>Meta: 1.980 kcal/dia</b>
+              <span>124g Prot · 220g Carb · 62g Gord</span>
+            </div>
           </div>
         </div>
-        <div className="lp-float-card bottom-right">
-          <div className="lp-float-icon nutri"><Flame size={14} /></div>
-          <div className="lp-float-text">
-            <b>Meta: 1.980 kcal/dia</b>
-            <span>124g Prot · 220g Carb · 62g Gord</span>
+
+        <div className="lp-hero-side-photos desktop-only">
+          <div className="lp-side-photo-card">
+            <img src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=1000&q=80" alt="Alimentos in natura e vegetais frescos" />
+            <div className="lp-side-photo-caption">
+              <b>Comida de verdade no dia a dia</b>
+              <span>Arroz, feijão, ovos, carnes, raízes e frutas brasileiras</span>
+            </div>
+          </div>
+          <div className="lp-side-photo-card">
+            <img src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80" alt="Pessoa praticando exercício físico" />
+            <div className="lp-side-photo-caption">
+              <b>Adaptado ao seu ritmo e esporte</b>
+              <span>Cálculo energético de Mifflin-St Jeor para 4 níveis de treino</span>
+            </div>
           </div>
         </div>
       </div>
@@ -166,41 +299,63 @@ function Landing({ go }) {
         <strong>SUS + IA</strong>
         <span>Guia nutricional e mapa de UBS próximas</span>
       </div>
+      <div className="lp-stat-card desktop-only">
+        <strong>Mifflin-St Jeor</strong>
+        <span>Taxa metabólica basal e divisão exata de macros</span>
+      </div>
     </section>
+    </div>
 
-    <section className="lp-section">
-      <p className="eyebrow">DOIS AMBIENTES INTEGRADOS</p>
-      <h2>Explore os 2 modos do Nutrê</h2>
-      <p className="lp-section-sub">Alterne a qualquer momento no topo do aplicativo conforme a sua necessidade do dia:</p>
+    <section id="lp-modos" className="lp-section lp-section-modes">
+      <div className="lp-section-head">
+        <div>
+          <p className="eyebrow">DOIS AMBIENTES INTEGRADOS</p>
+          <h2>Explore os 2 modos do Nutrê</h2>
+          <p className="lp-section-sub">Alterne a qualquer momento no topo do aplicativo conforme a sua necessidade do dia:</p>
+        </div>
 
-      <div className="lp-mode-switch" role="tablist" aria-label="Prévia dos modos do aplicativo">
-        <button
-          type="button"
-          className={!isNutri ? 'active health' : ''}
-          onClick={() => setPreviewMode('health')}
-        >
-          <HeartPulse size={16} /> Modo Saúde
-        </button>
-        <button
-          type="button"
-          className={isNutri ? 'active nutri' : ''}
-          onClick={() => setPreviewMode('nutrition')}
-        >
-          <Apple size={16} /> Modo Nutrição
-        </button>
+        <div className="lp-mode-switch" role="tablist" aria-label="Prévia dos modos do aplicativo">
+          <button
+            type="button"
+            className={!isNutri ? 'active health' : ''}
+            onClick={() => setPreviewMode('health')}
+          >
+            <HeartPulse size={16} /> Modo Saúde
+          </button>
+          <button
+            type="button"
+            className={isNutri ? 'active nutri' : ''}
+            onClick={() => setPreviewMode('nutrition')}
+          >
+            <Apple size={16} /> Modo Nutrição
+          </button>
+        </div>
       </div>
 
       <div className={`lp-mode-card ${isNutri ? 'nutri' : 'health'}`}>
-        <div className="lp-mode-media">
-          <img
-            src={isNutri
-              ? 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=700&q=80'
-              : 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=700&q=80'}
-            alt={isNutri ? 'Ingredientes naturais e refeição brasileira nutritiva' : 'Avaliação nutricional e hábitos saudáveis'}
-          />
-          <span className="lp-mode-tag">
-            {isNutri ? 'TEMA LARANJA · ALIMENTOS & DIETA' : 'TEMA VERDE · AVALIAÇÃO & REDE SUS'}
-          </span>
+        <div className="lp-mode-media-group">
+          <div className="lp-mode-media">
+            <img
+              src={isNutri
+                ? 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=700&q=80'
+                : 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=700&q=80'}
+              alt={isNutri ? 'Ingredientes naturais e refeição brasileira nutritiva' : 'Avaliação nutricional e hábitos saudáveis'}
+            />
+            <span className="lp-mode-tag">
+              {isNutri ? 'TEMA LARANJA · ALIMENTOS & DIETA' : 'TEMA VERDE · AVALIAÇÃO & REDE SUS'}
+            </span>
+          </div>
+          <div className="lp-mode-media secondary desktop-only">
+            <img
+              src={isNutri
+                ? 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=80'
+                : 'https://images.unsplash.com/photo-1505576399279-565b52d4ac71?auto=format&fit=crop&w=900&q=80'}
+              alt=""
+            />
+            <span className="lp-mode-tag">
+              {isNutri ? 'CARDÁPIO ACESSÍVEL COM IA' : 'ACOMPANHAMENTO DE EVOLUÇÃO'}
+            </span>
+          </div>
         </div>
         <div className="lp-mode-body">
           <h3>{isNutri ? 'Tabela TACO/UNICAMP e Dieta Acessível' : 'Cálculo de IMC, Calorias e Mapa de UBS'}</h3>
@@ -233,18 +388,23 @@ function Landing({ go }) {
               </li>
             </>}
           </ul>
+          <div className="lp-mode-cta desktop-only">
+            <Button onClick={() => go('register')}>
+              {isNutri ? 'Explorar alimentos e montar dieta' : 'Calcular meu IMC gratuitamente'} <ChevronRight size={19} />
+            </Button>
+          </div>
         </div>
       </div>
     </section>
 
-    <section className="lp-section">
+    <section id="lp-alimentos" className="lp-section lp-section-foods">
       <p className="eyebrow">DADOS REAIS · TACO 4ª ED. (NEPA/UNICAMP)</p>
       <h2>O que tem no prato do brasileiro</h2>
       <p className="lp-section-sub">Valores laboratoriais reais por 100g disponíveis para consulta imediata dentro da plataforma:</p>
 
       <div className="lp-food-grid">
         {LANDING_FOODS.map((f) => (
-          <article key={f.name} className="lp-food-card">
+          <article key={f.name} className={`lp-food-card ${f.desktopOnly ? 'desktop-only' : ''}`}>
             <div className="lp-food-img-wrap">
               <img src={f.img} alt={f.name} loading="lazy" />
               <span className="lp-food-kcal">{f.kcal} <small>kcal/100g</small></span>
@@ -264,77 +424,113 @@ function Landing({ go }) {
       </div>
     </section>
 
-    <section className="lp-section">
-      <div className="lp-age-card">
-        <div className="lp-age-head">
-          <Scale size={20} />
-          <div>
-            <p className="eyebrow">PRECISÃO CLÍNICA</p>
-            <h2>Por que a sua idade muda o cálculo do IMC?</h2>
-          </div>
-        </div>
-        <p className="lp-age-desc">
-          Muitas calculadoras usam uma régua única para todo mundo. O Nutrê segue o protocolo oficial do <b>Ministério da Saúde (SISVAN)</b>, que diferencia adultos e idosos:
-        </p>
-        <div className="lp-age-compare">
-          <div className="lp-age-box">
-            <span>Adultos (18 a 59 anos)</span>
-            <strong>18,5 a 24,9 <small>kg/m²</small></strong>
-            <p>Faixa de eutrofia (peso adequado) segundo a Organização Mundial da Saúde (OMS).</p>
-          </div>
-          <div className="lp-age-box highlight">
-            <span>Pessoas 60+ (Idosos)</span>
-            <strong>22,0 a 27,0 <small>kg/m²</small></strong>
-            <p>Critério de Lipschitz (SISVAN/MS): maior reserva protege ossos e previne a perda muscular (sarcopenia).</p>
-          </div>
-        </div>
+    <section id="lp-jornada" className="lp-section lp-journey desktop-only">
+      <p className="eyebrow">COMO FUNCIONA NA PRÁTICA</p>
+      <h2>Cuidado completo do cálculo ao prato</h2>
+      <p className="lp-section-sub">Construído para unir rigor científico, linguagem acolhedora e alimentos acessíveis da realidade brasileira:</p>
+      <div className="lp-journey-grid">
+        {DESKTOP_JOURNEY.map((j) => (
+          <article key={j.step} className="lp-journey-card">
+            <div className="lp-journey-img">
+              <img src={j.img} alt={j.title} loading="lazy" />
+              <span className="lp-journey-step">PASSO {j.step}</span>
+              <span className="lp-journey-tag">{j.tag}</span>
+            </div>
+            <div className="lp-journey-body">
+              <h3>{j.title}</h3>
+              <p>{j.desc}</p>
+            </div>
+          </article>
+        ))}
       </div>
     </section>
 
-    <section className="lp-section">
-      <p className="eyebrow">FONTES OFICIAIS VERIFICADAS</p>
-      <h2>Ciência aberta e confiável</h2>
-      <div className="lp-sources-grid">
-        <div className="lp-source-item">
-          <BookOpen size={18} />
-          <div>
-            <b>TACO · NEPA / UNICAMP</b>
-            <span>Tabela Brasileira de Composição de Alimentos (4ª edição) com análises nacionais.</span>
+    <div className="lp-dual-bottom">
+      <section id="lp-idade" className="lp-section">
+        <div className="lp-age-card">
+          <div className="lp-age-head">
+            <Scale size={20} />
+            <div>
+              <p className="eyebrow">PRECISÃO CLÍNICA</p>
+              <h2>Por que a sua idade muda o cálculo do IMC?</h2>
+            </div>
+          </div>
+          <p className="lp-age-desc">
+            Muitas calculadoras usam uma régua única para todo mundo. O Nutrê segue o protocolo oficial do <b>Ministério da Saúde (SISVAN)</b>, que diferencia adultos e idosos:
+          </p>
+          <div className="lp-age-compare">
+            <div className="lp-age-box">
+              <span>Adultos (18 a 59 anos)</span>
+              <strong>18,5 a 24,9 <small>kg/m²</small></strong>
+              <p>Faixa de eutrofia (peso adequado) segundo a Organização Mundial da Saúde (OMS).</p>
+            </div>
+            <div className="lp-age-box highlight">
+              <span>Pessoas 60+ (Idosos)</span>
+              <strong>22,0 a 27,0 <small>kg/m²</small></strong>
+              <p>Critério de Lipschitz (SISVAN/MS): maior reserva protege ossos e previne a perda muscular (sarcopenia).</p>
+            </div>
           </div>
         </div>
-        <div className="lp-source-item">
-          <Utensils size={18} />
-          <div>
-            <b>TBCA · USP / FoRC & USDA</b>
-            <span>Composição nutricional de preparações, lanches, frios e alimentos do cotidiano.</span>
+      </section>
+
+      <section id="lp-fontes" className="lp-section">
+        <p className="eyebrow">FONTES OFICIAIS VERIFICADAS</p>
+        <h2>Ciência aberta e confiável</h2>
+        <div className="lp-sources-grid">
+          <div className="lp-source-item">
+            <BookOpen size={18} />
+            <div>
+              <b>TACO · NEPA / UNICAMP</b>
+              <span>Tabela Brasileira de Composição de Alimentos (4ª edição) com análises nacionais.</span>
+            </div>
+          </div>
+          <div className="lp-source-item">
+            <Utensils size={18} />
+            <div>
+              <b>TBCA · USP / FoRC & USDA</b>
+              <span>Composição nutricional de preparações, lanches, frios e alimentos do cotidiano.</span>
+            </div>
+          </div>
+          <div className="lp-source-item">
+            <HeartPulse size={18} />
+            <div>
+              <b>Ministério da Saúde & OMS</b>
+              <span>Diretrizes do Guia Alimentar para a População Brasileira e protocolos do SISVAN.</span>
+            </div>
           </div>
         </div>
-        <div className="lp-source-item">
-          <HeartPulse size={18} />
-          <div>
-            <b>Ministério da Saúde & OMS</b>
-            <span>Diretrizes do Guia Alimentar para a População Brasileira e protocolos do SISVAN.</span>
-          </div>
-        </div>
-      </div>
-    </section>
+      </section>
+    </div>
 
     <section className="lp-bottom-cta">
-      <h2>Comece a cuidar da sua alimentação hoje.</h2>
-      <p>Ao concluir seu cadastro em 3 passos rápidos, seu primeiro IMC e sua meta diária de calorias e macros já saem prontos.</p>
-      <Button onClick={() => go('register')}>Criar minha conta agora <ChevronRight size={20} /></Button>
-      <div className="lp-trust-row">
-        <ShieldCheck size={17} />
-        <span>100% gratuito · Sem anúncios · Dados protegidos (LGPD)</span>
+      <div className="lp-bottom-cta-inner">
+        <div>
+          <h2>Comece a cuidar da sua alimentação hoje.</h2>
+          <p>Ao concluir seu cadastro em 3 passos rápidos, seu primeiro IMC e sua meta diária de calorias e macros já saem prontos.</p>
+        </div>
+        <div className="lp-bottom-cta-action">
+          <Button onClick={() => go('register')}>Criar minha conta agora <ChevronRight size={20} /></Button>
+          <div className="lp-trust-row">
+            <ShieldCheck size={17} />
+            <span>100% gratuito · Sem anúncios · Dados protegidos (LGPD)</span>
+          </div>
+        </div>
       </div>
     </section>
 
     <footer className="lp-footer-links">
-      <button type="button" onClick={() => go('about')}>Sobre o projeto</button>
-      <span>·</span>
-      <button type="button" onClick={() => go('terms')}>Termos de Uso</button>
-      <span>·</span>
-      <button type="button" onClick={() => go('privacy')}>Privacidade</button>
+      <div className="lp-footer-brand desktop-only">
+        <HeartPulse size={18} />
+        <b>Nutrê</b>
+        <span>· Saúde e nutrição baseada em evidências científicas</span>
+      </div>
+      <div className="lp-footer-nav">
+        <button type="button" onClick={() => go('about')}>Sobre o projeto</button>
+        <span>·</span>
+        <button type="button" onClick={() => go('terms')}>Termos de Uso</button>
+        <span>·</span>
+        <button type="button" onClick={() => go('privacy')}>Privacidade</button>
+      </div>
     </footer>
   </main>;
 }
@@ -386,7 +582,7 @@ const Register = ({ go, onAuth }) => {
     } finally { setLoading(false); }
   };
   const title = step === 1 ? 'Como podemos te chamar?' : step === 2 ? 'Conte um pouco sobre você.' : 'Vamos completar sua estimativa.';
-  return <main className="auth-page"><p className="eyebrow">CADASTRO · PASSO {step} DE 3</p><div className="stepper" aria-label={`Passo ${step} de 3`}><i className={step >= 1 ? 'done' : ''} /><i className={step >= 2 ? 'done' : ''} /><i className={step >= 3 ? 'done' : ''} /></div><h1>{title}</h1><p className="subhead">{step === 1 ? 'Esses dados serão usados para entrar na sua conta.' : step === 2 ? 'As informações ajudam a personalizar os cálculos.' : 'Com esses dados já calculamos seu primeiro IMC.'}</p>
+  return <main className="auth-page"><AuthVisualAside go={go} /><div className="auth-form-col"><p className="eyebrow">CADASTRO · PASSO {step} DE 3</p><div className="stepper" aria-label={`Passo ${step} de 3`}><i className={step >= 1 ? 'done' : ''} /><i className={step >= 2 ? 'done' : ''} /><i className={step >= 3 ? 'done' : ''} /></div><h1>{title}</h1><p className="subhead">{step === 1 ? 'Esses dados serão usados para entrar na sua conta.' : step === 2 ? 'As informações ajudam a personalizar os cálculos.' : 'Com esses dados já calculamos seu primeiro IMC.'}</p>
     <form onSubmit={step === 3 ? submit : next} className="form-grid" noValidate>
       {needsPassword && <Field label="Confirme sua senha" icon={Lock} hint="Por segurança, a senha não fica salva ao atualizar a página."><PasswordInput autoComplete="new-password" value={form.password} onChange={set('password')} /></Field>}
       {step === 1 && <><Field label="Seu nome" icon={UserRound}><input required autoComplete="name" value={form.name} onChange={set('name')} placeholder="Como quer ser chamado?" /></Field><Field label="E-mail" icon={Mail} error={emailError}><input required autoComplete="email" autoCapitalize="none" spellCheck="false" type="email" inputMode="email" value={form.email} onChange={set('email')} placeholder="nome@exemplo.com" aria-invalid={!!emailError} /></Field>{emailError && emailError.includes('já possui') && <button type="button" className="inline-link" onClick={() => { try { sessionStorage.setItem('nutre-login-email', form.email.trim()); } catch { /* ignore */ } go('login'); }}>Já é você? Entrar com este e-mail</button>}<Field label="Crie uma senha" icon={Lock} hint="Pelo menos 6 caracteres"><PasswordInput required autoComplete="new-password" minLength="6" value={form.password} onChange={set('password')} /></Field></>}
@@ -399,7 +595,7 @@ const Register = ({ go, onAuth }) => {
         <button type="button" onClick={() => go('privacy')}>Política de Privacidade</button>.
       </p>
       <Button type="submit" loading={loading}>{step === 3 ? 'Finalizar e criar conta' : 'Continuar'}</Button>
-    </form><p className="switch">Já tem uma conta?<button onClick={() => go('login')}>Entrar</button></p></main>;
+    </form><p className="switch">Já tem uma conta?<button onClick={() => go('login')}>Entrar</button></p><button type="button" className="auth-home-link desktop-only" onClick={() => go('landing')}>Voltar para o início</button></div></main>;
 };
 
 const Login = ({ go, onAuth }) => {
@@ -417,24 +613,28 @@ const Login = ({ go, onAuth }) => {
     go('forgot');
   };
   return <main className="auth-page auth-centered">
-    <div className="mini-logo"><HeartPulse /><b>Nutrê</b></div>
-    <h1>Que bom te ver.</h1>
-    <p className="subhead">Entre para continuar cuidando de você.</p>
-    <form onSubmit={submit} className="form-grid">
-      <Field label="E-mail" icon={Mail}>
-        <input type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck="false" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@exemplo.com" />
-      </Field>
-      <Field
-        label="Senha"
-        icon={Lock}
-        action={<button type="button" className="forgot-link" onClick={openForgot}>Esqueceu a senha?</button>}
-      >
-        <PasswordInput required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-      </Field>
-      {error && <div className="form-error">{error}</div>}
-      <Button loading={loading}>Entrar</Button>
-    </form>
-    <p className="switch">Ainda não tem conta?<button onClick={() => go('register')}>Criar cadastro</button></p>
+    <AuthVisualAside go={go} />
+    <div className="auth-form-col">
+      <div className="mini-logo"><HeartPulse /><b>Nutrê</b></div>
+      <h1>Que bom te ver.</h1>
+      <p className="subhead">Entre para continuar cuidando de você.</p>
+      <form onSubmit={submit} className="form-grid">
+        <Field label="E-mail" icon={Mail}>
+          <input type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck="false" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@exemplo.com" />
+        </Field>
+        <Field
+          label="Senha"
+          icon={Lock}
+          action={<button type="button" className="forgot-link" onClick={openForgot}>Esqueceu a senha?</button>}
+        >
+          <PasswordInput required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        </Field>
+        {error && <div className="form-error">{error}</div>}
+        <Button loading={loading}>Entrar</Button>
+      </form>
+      <p className="switch">Ainda não tem conta?<button onClick={() => go('register')}>Criar cadastro</button></p>
+      <button type="button" className="auth-home-link" onClick={() => go('landing')}>Voltar para o início</button>
+    </div>
   </main>;
 };
 
@@ -479,41 +679,44 @@ function ForgotPassword({ go }) {
   };
 
   return <main className="auth-page auth-centered">
-    <div className="mini-logo"><KeyRound /><b>Recuperar senha</b></div>
-    {step === 1 && <>
-      <h1>Esqueceu sua senha?</h1>
-      <p className="subhead">Informe o e-mail da sua conta para criar uma nova senha de acesso.</p>
-      <form onSubmit={checkAccount} className="form-grid" noValidate>
-        <Field label="E-mail da conta" icon={Mail}>
-          <input type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck="false" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@exemplo.com" />
-        </Field>
-        {error && <div className="form-error" role="alert">{error}</div>}
-        <Button loading={loading}>Continuar</Button>
-      </form>
-      <p className="switch">Lembrou a senha?<button onClick={() => go('login')}>Voltar para o login</button></p>
-    </>}
-    {step === 2 && <>
-      <h1>Olá{userName ? `, ${userName}` : ''}.</h1>
-      <p className="subhead">Escolha uma nova senha segura para a conta <b>{email.trim()}</b>.</p>
-      <form onSubmit={resetPass} className="form-grid" noValidate>
-        <Field label="Nova senha" icon={Lock} hint="Pelo menos 6 caracteres">
-          <PasswordInput required autoComplete="new-password" minLength="6" value={password} onChange={(e) => setPassword(e.target.value)} />
-        </Field>
-        <Field label="Confirme a nova senha" icon={KeyRound}>
-          <PasswordInput required autoComplete="new-password" minLength="6" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
-        </Field>
-        {error && <div className="form-error" role="alert">{error}</div>}
-        <Button loading={loading}>Salvar nova senha</Button>
-      </form>
-    </>}
-    {step === 3 && <div className="reset-success">
-      <div className="reset-success-icon"><CheckCircle2 size={32} /></div>
-      <h1>Senha atualizada!</h1>
-      <p className="subhead">Sua nova senha já está ativa. Agora é só entrar na sua conta.</p>
-      <div style={{ marginTop: 24 }}>
-        <Button onClick={() => go('login')}>Ir para o login</Button>
-      </div>
-    </div>}
+    <AuthVisualAside go={go} />
+    <div className="auth-form-col">
+      <div className="mini-logo"><KeyRound /><b>Recuperar senha</b></div>
+      {step === 1 && <>
+        <h1>Esqueceu sua senha?</h1>
+        <p className="subhead">Informe o e-mail da sua conta para criar uma nova senha de acesso.</p>
+        <form onSubmit={checkAccount} className="form-grid" noValidate>
+          <Field label="E-mail da conta" icon={Mail}>
+            <input type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck="false" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nome@exemplo.com" />
+          </Field>
+          {error && <div className="form-error" role="alert">{error}</div>}
+          <Button loading={loading}>Continuar</Button>
+        </form>
+        <p className="switch">Lembrou a senha?<button onClick={() => go('login')}>Voltar para o login</button></p>
+      </>}
+      {step === 2 && <>
+        <h1>Olá{userName ? `, ${userName}` : ''}.</h1>
+        <p className="subhead">Escolha uma nova senha segura para a conta <b>{email.trim()}</b>.</p>
+        <form onSubmit={resetPass} className="form-grid" noValidate>
+          <Field label="Nova senha" icon={Lock} hint="Pelo menos 6 caracteres">
+            <PasswordInput required autoComplete="new-password" minLength="6" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </Field>
+          <Field label="Confirme a nova senha" icon={KeyRound}>
+            <PasswordInput required autoComplete="new-password" minLength="6" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          </Field>
+          {error && <div className="form-error" role="alert">{error}</div>}
+          <Button loading={loading}>Salvar nova senha</Button>
+        </form>
+      </>}
+      {step === 3 && <div className="reset-success">
+        <div className="reset-success-icon"><CheckCircle2 size={32} /></div>
+        <h1>Senha atualizada!</h1>
+        <p className="subhead">Sua nova senha já está ativa. Agora é só entrar na sua conta.</p>
+        <div style={{ marginTop: 24 }}>
+          <Button onClick={() => go('login')}>Ir para o login</Button>
+        </div>
+      </div>}
+    </div>
   </main>;
 }
 
@@ -576,7 +779,22 @@ function PrivacyPage({ go }) {
 function Nav({ page, setPage, mode }) {
   const second = mode === 'nutrition' ? ['foods', Apple, 'Alimentos'] : ['calculator', Calculator, 'Calcular'];
   const items = [['home', House, 'Início'], second, ['chat', Bot, 'Guia IA'], ['history', History, 'Histórico'], ['profile', UserRound, 'Conta']];
-  return <nav className="bottom-nav">{items.map(([id, Icon, label]) => <button key={id} className={page === id ? 'active' : ''} onClick={() => setPage(id)}><Icon size={20} /><span>{label}</span></button>)}</nav>;
+  const isNutri = mode === 'nutrition';
+  return <nav className="bottom-nav">
+    {items.map(([id, Icon, label]) => <button key={id} className={page === id ? 'active' : ''} onClick={() => setPage(id)}><Icon size={20} /><span>{label}</span></button>)}
+    <div className="nav-sidebar-card desktop-only">
+      <img
+        src={isNutri
+          ? 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80'
+          : 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=600&q=80'}
+        alt=""
+      />
+      <div>
+        <b>{isNutri ? 'Tabela TACO · UNICAMP' : 'Diretrizes OMS & SUS'}</b>
+        <span>{isNutri ? '140 alimentos reais analisados por 100g e porção.' : 'Cuidado preventivo adaptado à sua faixa etária.'}</span>
+      </div>
+    </div>
+  </nav>;
 }
 function Shell({ children, page, setPage, user, mode, onToggleMode }) {
   const isNutri = mode === 'nutrition';
@@ -590,7 +808,7 @@ function Shell({ children, page, setPage, user, mode, onToggleMode }) {
         <button className="avatar" onClick={() => setPage('profile')} aria-label="Abrir conta">{(user.name || '?')[0]}</button>
       </div>
     </header>
-    <main className="screen" key={`${mode}-${page}`}>{children}</main>
+    <main className={`screen page-${page}`} key={`${mode}-${page}`}>{children}</main>
     <Nav page={page} setPage={setPage} mode={mode} />
   </div>;
 }
@@ -629,6 +847,20 @@ function Dashboard({ user, history, hasManual, loaded, setPage, mode, onStartDie
   const fromSignup = latest?.source === 'cadastro';
   const isNutri = mode === 'nutrition';
   return <>
+    <div className="dash-desktop-hero desktop-only">
+      <img
+        src={isNutri
+          ? 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1000&q=80'
+          : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1000&q=80'}
+        alt=""
+      />
+      <div className="dash-desktop-hero-overlay" />
+      <div className="dash-desktop-hero-content">
+        <span className="dash-desktop-pill">{isNutri ? 'MODO NUTRIÇÃO · TACO/UNICAMP' : 'MODO SAÚDE · OMS & SISVAN/MS'}</span>
+        <h2>{isNutri ? 'Comida de verdade, planejada para a sua rotina.' : 'Acompanhe seus indicadores com clareza científica.'}</h2>
+        <p>{isNutri ? 'Consulte a composição nutricional de 140 alimentos ou peça ao Guia IA um cardápio econômico com o que você tem em casa.' : 'Seus cálculos utilizam os pontos de corte oficiais para a sua idade e a equação energética de Mifflin-St Jeor.'}</p>
+      </div>
+    </div>
     <p className="eyebrow">{isNutri ? 'MODO NUTRIÇÃO · TACO/UNICAMP' : fromSignup && !hasManual ? 'SEU PRIMEIRO RESULTADO' : 'HOJE É UM BOM DIA'}</p>
     <h1>Olá, {user.name.split(' ')[0]}.</h1>
     <p className="subhead">{isNutri ? 'Consulte a tabela nutricional dos alimentos e monte uma dieta acessível para a sua rotina.' : fromSignup && !hasManual ? 'Já calculamos seu IMC com os dados do seu cadastro.' : 'Vamos cuidar de você com calma?'}</p>
@@ -834,8 +1066,44 @@ function CalculatorPage({ user, hasManual, onSaved, setPage }) {
     setLoading(true); setError('');
     try { await onSaved({ weight: parseDecimal(form.weight), height: parseHeightCm(form.height), activity: form.activity }); setPage('result'); } catch (err) { setError(err.message); } finally { setLoading(false); }
   };
-  return <div className="calc-page"><div><p className="eyebrow">CALCULADORA</p><h1>{hasManual ? 'Atualize seus dados.' : 'Calcule seu IMC.'}</h1><p className="subhead">{hasManual ? 'Uma estimativa para acompanhar seu cuidado.' : 'Já preenchemos com os dados do seu cadastro. Confira e calcule.'}</p></div>
-    <form className="form-grid calc-form" onSubmit={submit} noValidate><Field label="Peso de hoje (kg)" hint="Ex.: 68 ou 68,5"><input required type="text" inputMode="decimal" autoComplete="off" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} /></Field><Field label="Altura" hint="Em centímetros (170) ou metros (1,70)"><input required type="text" inputMode="decimal" autoComplete="off" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} /></Field><Field label="Nível de atividade"><select value={form.activity} onChange={(e) => setForm({ ...form, activity: e.target.value })}><option value="sedentario">Pouco ou nenhum (sem exercício)</option><option value="leve">Leve (1 a 3 dias na semana)</option><option value="moderado">Moderado (3 a 5 dias na semana)</option><option value="intenso">Intenso (6 a 7 dias na semana)</option></select></Field>{error && <div className="form-error" role="alert">{error}</div>}<div className="page-footer"><p className="disclaimer"><CircleHelp size={15} /> Esta é uma estimativa e não substitui acompanhamento profissional.</p><Button loading={loading}>{hasManual ? 'Calcular novamente' : 'Calcular IMC'}</Button></div></form></div>;
+  const isSenior = Number(user.age) >= 60;
+  return <div className="calc-page">
+    <div className="calc-main-col">
+      <div><p className="eyebrow">CALCULADORA</p><h1>{hasManual ? 'Atualize seus dados.' : 'Calcule seu IMC.'}</h1><p className="subhead">{hasManual ? 'Uma estimativa para acompanhar seu cuidado.' : 'Já preenchemos com os dados do seu cadastro. Confira e calcule.'}</p></div>
+      <form className="form-grid calc-form" onSubmit={submit} noValidate><Field label="Peso de hoje (kg)" icon={Scale} hint="Ex.: 68 ou 68,5"><input required type="text" inputMode="decimal" autoComplete="off" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} /></Field><Field label="Altura" icon={Ruler} hint="Em centímetros (170) ou metros (1,70)"><input required type="text" inputMode="decimal" autoComplete="off" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} /></Field><Field label="Nível de atividade" icon={Activity}><select value={form.activity} onChange={(e) => setForm({ ...form, activity: e.target.value })}><option value="sedentario">Pouco ou nenhum (sem exercício)</option><option value="leve">Leve (1 a 3 dias na semana)</option><option value="moderado">Moderado (3 a 5 dias na semana)</option><option value="intenso">Intenso (6 a 7 dias na semana)</option></select></Field>{error && <div className="form-error" role="alert">{error}</div>}<div className="page-footer"><p className="disclaimer"><CircleHelp size={15} /> Esta é uma estimativa e não substitui acompanhamento profissional.</p><Button loading={loading}>{hasManual ? 'Calcular novamente' : 'Calcular IMC'}</Button></div></form>
+    </div>
+
+    <aside className="calc-desktop-aside desktop-only" aria-label="Como calculamos seus indicadores">
+      <div className="calc-aside-photo">
+        <img src="https://images.unsplash.com/photo-1505576399279-565b52d4ac71?auto=format&fit=crop&w=900&q=80" alt="" />
+        <span className="calc-aside-badge">{isSenior ? 'PROTOCOLO 60+ · SISVAN/MS' : 'PROTOCOLO ADULTO · OMS'}</span>
+      </div>
+      <div className="calc-aside-body">
+        <h3>Parâmetros aplicados ao seu perfil ({user.age} anos)</h3>
+        <p>Seus resultados são gerados instantaneamente cruzando suas medidas com três referências clínicas:</p>
+        <ul className="calc-aside-list">
+          <li>
+            <Scale size={16} />
+            <div>
+              <b>Faixa adequada para sua idade:</b> {isSenior ? '22,0 a 27,0 kg/m² (Lipschitz / Ministério da Saúde)' : '18,5 a 24,9 kg/m² (Organização Mundial da Saúde)'}.
+            </div>
+          </li>
+          <li>
+            <Flame size={16} />
+            <div>
+              <b>Gasto energético diário:</b> taxa metabólica basal multiplicada pelo seu nível de exercício semanal.
+            </div>
+          </li>
+          <li>
+            <Utensils size={16} />
+            <div>
+              <b>Divisão de macronutrientes:</b> estimativa em gramas de proteínas, carboidratos e gorduras para o seu dia.
+            </div>
+          </li>
+        </ul>
+      </div>
+    </aside>
+  </div>;
 }
 
 function Result({ result, loaded, setPage }) {
@@ -1130,11 +1398,79 @@ const SOURCES = [
   { badge: 'Gasto Energético · AMDR', title: 'Equação de Harris-Benedict & Macronutrientes', desc: 'Estimativa de taxa metabólica basal revisada por Roza & Shizgal (1984) combinada ao fator de atividade física e distribuição equilibrada (50% carboidratos, 20% proteínas, 30% lipídios).', url: 'https://pubmed.ncbi.nlm.nih.gov/6741850/', linkLabel: 'pubmed.ncbi.nlm.nih.gov' },
 ];
 
-function Profile({ user, onLogout }) {
+function Profile({ user, history, setPage, onLogout }) {
   const heightM = user.height ? `${Number(user.height).toFixed(2).replace('.', ',')} m` : '-';
+  const latest = history?.[0];
+  const isSenior = Number(user.age) >= 60;
   return <div className="profile-page">
     <div className="profile-body">
       <p className="eyebrow">SUA CONTA</p><h1>{user.name}</h1><p className="subhead">{user.email}</p>
+
+      <aside className="profile-desktop-card desktop-only">
+        <div className="profile-desktop-banner">
+          <div className="profile-desktop-user">
+            <div className="profile-desktop-avatar">{(user.name || '?')[0]}</div>
+            <div className="profile-desktop-id">
+              <span className="profile-desktop-badge">{isSenior ? 'Critério 60+ · SISVAN/MS' : 'Critério Adulto · OMS'}</span>
+              <h2>{user.name}</h2>
+              <p>{user.email}</p>
+            </div>
+          </div>
+          <div className="profile-desktop-actions">
+            <Button onClick={() => setPage('calculator')}><Calculator size={18} /> Atualizar peso e medidas</Button>
+            <Button variant="secondary" onClick={onLogout}><LogOut size={18} /> Sair da conta</Button>
+          </div>
+        </div>
+
+        <div className="profile-desktop-stats">
+          <div className="profile-stat-tile">
+            <span className="profile-tile-icon"><Calendar size={16} /></span>
+            <div>
+              <small>Idade registrada</small>
+              <b>{user.age} anos</b>
+            </div>
+          </div>
+          <div className="profile-stat-tile">
+            <span className="profile-tile-icon"><Scale size={16} /></span>
+            <div>
+              <small>Peso atual</small>
+              <b>{decimalBR(user.weight)} kg</b>
+            </div>
+          </div>
+          <div className="profile-stat-tile">
+            <span className="profile-tile-icon"><Ruler size={16} /></span>
+            <div>
+              <small>Estatura</small>
+              <b>{heightM}</b>
+            </div>
+          </div>
+          <div className="profile-stat-tile">
+            <span className="profile-tile-icon"><Activity size={16} /></span>
+            <div>
+              <small>Rotina física</small>
+              <b>{ACTIVITY_LABELS[user.activity] || 'Atividade leve'}</b>
+            </div>
+          </div>
+        </div>
+
+        {latest && (
+          <div className="profile-desktop-latest">
+            <div className="profile-latest-item">
+              <small>Último IMC calculado</small>
+              <strong>IMC {bmiBR(latest.bmi)} <span className={`pill ${toneOf(latest)}`}>{latest.classification}</span></strong>
+            </div>
+            <div className="profile-latest-item">
+              <small>Meta energética diária</small>
+              <strong>{latest.calories.toLocaleString('pt-BR')} kcal/dia</strong>
+            </div>
+            <div className="profile-latest-item">
+              <small>Macronutrientes estimados</small>
+              <b>{latest.protein}g Prot · {latest.carbs}g Carb · {latest.fats}g Gord</b>
+            </div>
+          </div>
+        )}
+      </aside>
+
       <section className="sources-section data-section">
         <div className="sources-head"><UserRound size={18} /><div><h2>Dados</h2><p>Informações atuais usadas para calcular seu IMC e necessidades.</p></div></div>
         <div className="profile-card">

@@ -284,6 +284,23 @@ input { -webkit-appearance: none; appearance: none; }
 .switch button { padding: 0 !important; margin: 0 0 0 2px !important; text-decoration: none; transition: color .18s; }
 .switch button:hover { color: var(--teal-dark); text-decoration: none; }
 
+.auth-home-link {
+  align-self: center;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 2px 6px;
+  margin-top: 4px;
+  text-decoration: none;
+  transition: color .18s;
+}
+.auth-home-link:hover {
+  color: var(--teal);
+  text-decoration: none;
+}
+
 .auth-page:not(.legal-page),
 .auth-centered {
   display: flex;
