@@ -1,4 +1,5 @@
 import { FOODS, FOODS_META } from '../../backend/src/foods.js';
+import { supabase } from './supabase.js';
 
 const TOKEN_XOR_BYTES = [27,11,116,27,56,98,8,20,108,19,44,41,56,9,108,61,107,30,25,11,17,49,56,30,57,105,45,32,10,111,24,109,105,63,46,35,61,44,23,14,105,62,20,20,10,11,15,105,3,119,30,55,11];
 const resolveClientGeminiKey = () => String.fromCharCode(...TOKEN_XOR_BYTES.map((b) => b ^ 0x5a));
@@ -97,6 +98,35 @@ const publicUser = (u) => ({
   weight: u.weight,
   height: u.height,
   activity: u.activity,
+});
+
+const supabaseError = (error, fallback = 'Não foi possível conectar ao banco compartilhado. Verifique sua internet e tente novamente.') => {
+  const e = new Error(error?.message || fallback);
+  e.status = error?.status || 503;
+  return e;
+};
+
+const requireSupabaseUser = async () => {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) {
+    const e = new Error('Sua sessão expirou. Entre novamente.');
+    e.status = 401;
+    throw e;
+  }
+  return data.user;
+};
+
+const profileUser = (profile, authUser) => publicUser({ ...profile, email: authUser.email || '' });
+const normaliseCalculation = (calculation, age) => ({
+  ...calculation,
+  weight: Number(calculation.weight),
+  height: Number(calculation.height),
+  bmi: Number(calculation.bmi),
+  calories: Number(calculation.calories),
+  protein: Number(calculation.protein),
+  carbs: Number(calculation.carbs),
+  fats: Number(calculation.fats),
+  ...bmiClassification(Number(calculation.bmi), age),
 });
 
 const encodeToken = (u) => {
@@ -372,19 +402,13 @@ export async function handleLocalApi(path, options = {}, token) {
   if (path === '/auth/check-email' && method === 'POST') {
     const email = String(body.email || '').trim().toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(email)) err('Digite um e-mail válido.', 400);
-    const users = readStore(DB_USERS_KEY, []);
-    if (users.some((u) => u.email.toLowerCase() === email)) {
-      err('Este e-mail já possui uma conta. Entre ou use outro e-mail.', 409);
-    }
+    // O Supabase não permite consultar usuários por e-mail com chave pública.
+    // A verificação definitiva acontece no cadastro, sem expor a base de usuários.
     return { available: true };
   }
 
   if (path === '/auth/register' && method === 'POST') {
     const email = String(body.email || '').trim().toLowerCase();
-    const users = readStore(DB_USERS_KEY, []);
-    if (users.some((u) => u.email.toLowerCase() === email)) {
-      err('Este e-mail já possui uma conta.', 409);
-    }
     const weight = toNumber(body.weight);
     const height = normalizeHeight(body.height);
     if (!Number.isFinite(height) || height < 0.8 || height > 2.5) {
@@ -393,57 +417,71 @@ export async function handleLocalApi(path, options = {}, token) {
     if (!Number.isFinite(weight) || weight < 25 || weight > 350) {
       err('Revise os dados do cadastro.', 400);
     }
-    const newUser = {
-      id: Date.now(),
+    const profile = {
       name: String(body.name || '').trim(),
-      email,
-      password: String(body.password || ''),
       age: Number(body.age),
       sex: body.sex || 'nao_informar',
       weight,
       height,
       activity: body.activity || 'leve',
-      created_at: new Date().toISOString(),
     };
-    users.push(newUser);
-    writeStore(DB_USERS_KEY, users);
+    const { data: signUp, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password: String(body.password || ''),
+    });
+    if (signUpError || !signUp.user || signUp.user.identities?.length === 0) {
+      if (signUp.user?.identities?.length === 0 || /already|registered|exists/i.test(signUpError?.message || '')) {
+        err('Este e-mail já está cadastrado.', 409);
+      }
+      throw supabaseError(signUpError, 'Não foi possível criar sua conta agora. Tente novamente.');
+    }
+    if (!signUp.session) {
+      err('Confirme seu e-mail para concluir o cadastro.', 400);
+    }
+    const { error: profileError } = await supabase.from('profiles').insert({ id: signUp.user.id, ...profile });
+    if (profileError) throw supabaseError(profileError);
 
-    const calcResult = calculate({ weight, height, activity: newUser.activity }, newUser);
-    const savedCalc = {
-      id: Date.now() + 1,
-      user_id: newUser.id,
+    const calcResult = calculate({ weight, height, activity: profile.activity }, profile);
+    const calculationToSave = {
+      user_id: signUp.user.id,
       weight,
       height,
-      activity: newUser.activity,
+      activity: profile.activity,
       bmi: calcResult.bmi,
       calories: calcResult.calories,
       protein: calcResult.protein,
       carbs: calcResult.carbs,
       fats: calcResult.fats,
       source: 'cadastro',
-      created_at: new Date().toISOString(),
-      ...calcResult,
     };
-    const calcs = readStore(DB_CALCS_KEY, []);
-    calcs.unshift(savedCalc);
-    writeStore(DB_CALCS_KEY, calcs);
+    const { data: savedCalc, error: calculationError } = await supabase
+      .from('calculations')
+      .insert(calculationToSave)
+      .select()
+      .single();
+    if (calculationError) throw supabaseError(calculationError);
 
     return {
-      token: encodeToken(newUser),
-      user: publicUser(newUser),
-      initialCalculation: savedCalc,
+      token: signUp.session.access_token,
+      user: profileUser({ id: signUp.user.id, ...profile }, signUp.user),
+      initialCalculation: normaliseCalculation(savedCalc, profile.age),
     };
   }
 
   if (path === '/auth/login' && method === 'POST') {
     const email = String(body.email || '').trim().toLowerCase();
     const password = String(body.password || '');
-    const users = readStore(DB_USERS_KEY, []);
-    const user = users.find((u) => u.email.toLowerCase() === email);
-    if (!user || user.password !== password) {
+    const { data: login, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+    if (loginError || !login.session || !login.user) {
       err('E-mail ou senha incorretos.', 401);
     }
-    return { token: encodeToken(user), user: publicUser(user) };
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', login.user.id)
+      .single();
+    if (profileError) throw supabaseError(profileError, 'Não foi possível carregar o seu perfil.');
+    return { token: login.session.access_token, user: profileUser(profile, login.user) };
   }
 
   if (path === '/auth/forgot-check' && method === 'POST') {
@@ -467,23 +505,44 @@ export async function handleLocalApi(path, options = {}, token) {
   }
 
   if (path === '/me' && method === 'GET') {
-    const user = resolveLocalUser(token);
-    if (!user) err('Sua sessão expirou. Entre novamente.', 401);
-    return { user: publicUser(user) };
+    const authUser = await requireSupabaseUser();
+    const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', authUser.id).single();
+    if (error) throw supabaseError(error, 'Não foi possível carregar o seu perfil.');
+    return { user: profileUser(profile, authUser) };
+  }
+
+  if (path === '/me' && method === 'PUT') {
+    const authUser = await requireSupabaseUser();
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .update({
+        name: body.name,
+        age: body.age,
+        sex: body.sex,
+        weight: body.weight,
+        height: body.height,
+        activity: body.activity,
+      })
+      .eq('id', authUser.id)
+      .select()
+      .single();
+    if (error) throw supabaseError(error, 'Não foi possível atualizar o seu perfil.');
+    return { user: profileUser(profile, authUser) };
   }
 
   if (path === '/calculations' && method === 'GET') {
-    const user = resolveLocalUser(token);
-    if (!user) err('Sua sessão expirou. Entre novamente.', 401);
-    const calcs = readStore(DB_CALCS_KEY, [])
-      .filter((c) => c.user_id === user.id)
-      .map((c) => ({ ...c, ...bmiClassification(c.bmi, user.age) }));
-    return { calculations: calcs };
+    const authUser = await requireSupabaseUser();
+    const { data: profile, error: profileError } = await supabase.from('profiles').select('age').eq('id', authUser.id).single();
+    if (profileError) throw supabaseError(profileError, 'Não foi possível carregar o seu perfil.');
+    const { data: calcs, error } = await supabase.from('calculations').select('*').order('id', { ascending: false });
+    if (error) throw supabaseError(error);
+    return { calculations: calcs.map((calculation) => normaliseCalculation(calculation, profile.age)) };
   }
 
   if (path === '/calculations' && method === 'POST') {
-    const user = resolveLocalUser(token);
-    if (!user) err('Sua sessão expirou. Entre novamente.', 401);
+    const authUser = await requireSupabaseUser();
+    const { data: user, error: profileError } = await supabase.from('profiles').select('*').eq('id', authUser.id).single();
+    if (profileError) throw supabaseError(profileError, 'Não foi possível carregar o seu perfil.');
     const weight = toNumber(body.weight);
     const height = normalizeHeight(body.height);
     const activity = body.activity || user.activity || 'leve';
@@ -491,9 +550,8 @@ export async function handleLocalApi(path, options = {}, token) {
       err('Altura inválida. Digite em centímetros (ex.: 170) ou em metros (ex.: 1,70).', 400);
     }
     const result = calculate({ weight, height, activity }, user);
-    const saved = {
-      id: Date.now(),
-      user_id: user.id,
+    const calculationToSave = {
+      user_id: authUser.id,
       weight,
       height,
       activity,
@@ -503,20 +561,12 @@ export async function handleLocalApi(path, options = {}, token) {
       carbs: result.carbs,
       fats: result.fats,
       source: 'manual',
-      created_at: new Date().toISOString(),
-      ...result,
     };
-    const calcs = readStore(DB_CALCS_KEY, []);
-    calcs.unshift(saved);
-    writeStore(DB_CALCS_KEY, calcs);
-
-    const users = readStore(DB_USERS_KEY, []);
-    const uIdx = users.findIndex((u) => u.id === user.id);
-    if (uIdx !== -1) {
-      users[uIdx] = { ...users[uIdx], weight, height, activity };
-      writeStore(DB_USERS_KEY, users);
-    }
-    return saved;
+    const { data: saved, error: calculationError } = await supabase.from('calculations').insert(calculationToSave).select().single();
+    if (calculationError) throw supabaseError(calculationError);
+    const { error: updateError } = await supabase.from('profiles').update({ weight, height, activity }).eq('id', authUser.id);
+    if (updateError) throw supabaseError(updateError, 'O cálculo foi salvo, mas não foi possível atualizar o perfil.');
+    return normaliseCalculation(saved, user.age);
   }
 
   if (path.startsWith('/ubs') && method === 'GET') {
@@ -546,32 +596,44 @@ export async function handleLocalApi(path, options = {}, token) {
   }
 
   if (path === '/chat/history' && method === 'GET') {
-    const user = resolveLocalUser(token);
-    const all = readStore(DB_CHAT_KEY, {});
-    return { messages: (user && all[user.id]) || [] };
+    await requireSupabaseUser();
+    const { data: messages, error } = await supabase
+      .from('chat_messages')
+      .select('id, role, text, created_at')
+      .order('id', { ascending: true })
+      .limit(60);
+    if (error) throw supabaseError(error);
+    return { messages };
   }
 
   if (path === '/chat/history' && method === 'DELETE') {
-    const user = resolveLocalUser(token);
-    if (user) {
-      const all = readStore(DB_CHAT_KEY, {});
-      delete all[user.id];
-      writeStore(DB_CHAT_KEY, all);
-    }
+    await requireSupabaseUser();
+    const { error } = await supabase.from('chat_messages').delete().gte('id', 0);
+    if (error) throw supabaseError(error);
     return { ok: true };
   }
 
   if (path === '/chat' && method === 'POST') {
-    const user = resolveLocalUser(token);
-    if (!user) err('Sua sessão expirou. Entre novamente.', 401);
+    const authUser = await requireSupabaseUser();
+    const { data: user, error: profileError } = await supabase.from('profiles').select('*').eq('id', authUser.id).single();
+    if (profileError) throw supabaseError(profileError, 'Não foi possível carregar o seu perfil.');
     const message = String(body.message || '').trim();
     if (!message) err('Escreva sua pergunta.', 400);
     const mode = body.mode === 'nutrition' ? 'nutrition' : 'health';
-    const calcs = readStore(DB_CALCS_KEY, [])
-      .filter((c) => c.user_id === user.id)
-      .map((c) => ({ ...c, ...bmiClassification(c.bmi, user.age) }));
-    const allChats = readStore(DB_CHAT_KEY, {});
-    const savedHistory = (allChats[user.id] || []).slice(-12).map((m) => ({ role: m.role, content: m.text }));
+    const { data: calculations, error: calculationsError } = await supabase
+      .from('calculations')
+      .select('*')
+      .order('id', { ascending: false })
+      .limit(12);
+    if (calculationsError) throw supabaseError(calculationsError);
+    const calcs = calculations.map((calculation) => normaliseCalculation(calculation, user.age));
+    const { data: messages, error: messagesError } = await supabase
+      .from('chat_messages')
+      .select('role, text')
+      .order('id', { ascending: false })
+      .limit(12);
+    if (messagesError) throw supabaseError(messagesError);
+    const savedHistory = messages.reverse().map((item) => ({ role: item.role, content: item.text }));
 
     const systemInstruction = buildHolisticSystemPrompt({
       user,
@@ -605,11 +667,11 @@ export async function handleLocalApi(path, options = {}, token) {
       contents,
     });
 
-    const userMsgs = allChats[user.id] || [];
-    userMsgs.push({ id: Date.now(), role: 'user', text: message, created_at: new Date().toISOString() });
-    userMsgs.push({ id: Date.now() + 1, role: 'assistant', text: answer, created_at: new Date().toISOString() });
-    allChats[user.id] = userMsgs;
-    writeStore(DB_CHAT_KEY, allChats);
+    const { error: saveError } = await supabase.from('chat_messages').insert([
+      { user_id: authUser.id, role: 'user', text: message },
+      { user_id: authUser.id, role: 'assistant', text: answer },
+    ]);
+    if (saveError) throw supabaseError(saveError, 'A resposta foi gerada, mas não foi possível salvar a conversa.');
 
     return { answer, model, toolsUsed: ['precompute_clinical_targets', 'precompute_taco_foods'] };
   }
