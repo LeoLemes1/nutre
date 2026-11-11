@@ -15,8 +15,8 @@ const GEMINI_RACE_MODELS = [
 const DB_USERS_KEY = 'nutre-cloud-users';
 const DB_CALCS_KEY = 'nutre-cloud-calcs';
 const DB_CHAT_KEY = 'nutre-cloud-chat';
-const DB_ADMIN_USERS_KEY = 'nutre-admin-users';
-const DB_ADMIN_AUDIT_KEY = 'nutre-admin-audit';
+const DB_ADMIN_USERS_KEY = 'nutre-admin-users-v3';
+const DB_ADMIN_AUDIT_KEY = 'nutre-admin-audit-v3';
 
 let cachedClientIp = null;
 const getClientIp = async () => {
@@ -37,23 +37,30 @@ const getClientIp = async () => {
 };
 
 const INITIAL_ADMIN_USERS = [
-  { id: 1, name: 'Leonardo Lemes', email: 'leolemes021@gmail.com', role: 'admin', protected: true, created_at: '2026-10-19 20:32:30', created_ip: '189.40.10.20', last_access_at: new Date().toISOString().replace('T', ' ').slice(0, 19), last_ip: '189.40.10.20', calc_count: 5 },
-  { id: 2, name: 'Ana Souza', email: 'ana.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-10 12:00:00', created_ip: '189.40.10.20', last_access_at: '2026-10-22 14:10:00', last_ip: '189.40.10.20', calc_count: 2 },
-  { id: 3, name: 'Bruno Lima', email: 'bruno.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-11 15:30:00', created_ip: '189.41.17.21', last_access_at: '2026-10-22 15:20:00', last_ip: '189.41.17.21', calc_count: 3 },
-  { id: 4, name: 'Carla Mendes', email: 'carla.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-12 09:15:00', created_ip: '189.42.24.22', last_access_at: '2026-10-22 16:45:00', last_ip: '189.42.24.22', calc_count: 1 },
-  { id: 5, name: 'Diego Alves', email: 'diego.teste@nutre.test', role: 'admin', protected: false, created_at: '2026-10-13 18:20:00', created_ip: '189.43.31.23', last_access_at: '2026-10-22 17:00:00', last_ip: '189.43.31.23', calc_count: 4 },
-  { id: 6, name: 'Elaine Costa', email: 'elaine.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-14 11:40:00', created_ip: '189.44.38.24', last_access_at: '2026-10-21 20:10:00', last_ip: '189.44.38.24', calc_count: 2 },
-  { id: 7, name: 'Felipe Rocha', email: 'felipe.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-15 14:50:00', created_ip: '189.45.45.25', last_access_at: '2026-10-21 18:30:00', last_ip: '189.45.45.25', calc_count: 1 },
-  { id: 8, name: 'Gabriela Dias', email: 'gabriela.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-16 16:05:00', created_ip: '189.46.52.26', last_access_at: '2026-10-22 11:15:00', last_ip: '189.46.52.26', calc_count: 2 },
-  { id: 9, name: 'Henrique Prado', email: 'henrique.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-17 10:25:00', created_ip: '189.47.59.27', last_access_at: '2026-10-22 13:40:00', last_ip: '189.47.59.27', calc_count: 3 },
-  { id: 10, name: 'Isabela Nunes', email: 'isabela.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-18 13:35:00', created_ip: '189.48.66.28', last_access_at: '2026-10-22 18:00:00', last_ip: '189.48.66.28', calc_count: 2 },
-  { id: 11, name: 'João Pereira', email: 'joao.teste@nutre.test', role: 'user', protected: false, created_at: '2026-10-19 18:47:00', created_ip: '189.49.73.29', last_access_at: '2026-10-21 14:12:00', last_ip: '189.49.73.29', calc_count: 1 },
+  { id: 1, name: 'Leonardo Lemes', email: 'leolemes021@gmail.com', role: 'admin', protected: true, created_at: '2026-10-08 10:15:00', created_ip: '189.40.10.20', last_access_at: '2026-11-11 18:30:00', last_ip: '189.40.10.20', calc_count: 2 },
+  { id: 2, name: 'Mariana Ribeiro Gomes', email: 'mariana.ribeiro89@gmail.com', role: 'user', protected: false, created_at: '2026-10-10 14:22:18', created_ip: '177.84.112.45', last_access_at: '2026-11-11 17:45:10', last_ip: '177.84.112.45', calc_count: 3 },
+  { id: 3, name: 'Ricardo Almeida Prado', email: 'ricardo.almeida.prado@gmail.com', role: 'user', protected: false, created_at: '2026-10-11 09:14:05', created_ip: '189.62.45.118', last_access_at: '2026-11-11 16:30:22', last_ip: '189.62.45.118', calc_count: 3 },
+  { id: 4, name: 'Camila Fernandes Duarte', email: 'camila.duarte.fer@gmail.com', role: 'user', protected: false, created_at: '2026-10-13 19:08:33', created_ip: '200.155.88.14', last_access_at: '2026-11-11 14:12:05', last_ip: '200.155.88.14', calc_count: 2 },
+  { id: 5, name: 'Lucas Mendes Cavalcanti', email: 'lucas.cavalcanti98@gmail.com', role: 'user', protected: false, created_at: '2026-10-15 11:42:19', created_ip: '179.108.34.92', last_access_at: '2026-11-11 18:05:44', last_ip: '179.108.34.92', calc_count: 2 },
+  { id: 6, name: 'Helena Rodrigues Batista', email: 'helena.batista64@gmail.com', role: 'user', protected: false, created_at: '2026-10-16 10:15:50', created_ip: '187.32.91.203', last_access_at: '2026-11-10 16:40:19', last_ip: '187.32.91.203', calc_count: 2 },
+  { id: 7, name: 'Thiago Nogueira Santos', email: 'thiago.nogueira.santos@gmail.com', role: 'admin', protected: false, created_at: '2026-10-18 15:30:11', created_ip: '191.240.18.77', last_access_at: '2026-11-11 15:50:30', last_ip: '191.240.18.77', calc_count: 2 },
+  { id: 8, name: 'Beatriz Oliveira Martins', email: 'bia.oliveira.martins@gmail.com', role: 'user', protected: false, created_at: '2026-10-19 20:11:45', created_ip: '177.45.210.63', last_access_at: '2026-11-09 21:18:00', last_ip: '177.45.210.63', calc_count: 2 },
+  { id: 9, name: 'Fernando Costa Azevedo', email: 'fernando.azevedo75@gmail.com', role: 'user', protected: false, created_at: '2026-10-20 08:50:29', created_ip: '189.110.74.31', last_access_at: '2026-11-10 11:25:14', last_ip: '189.110.74.31', calc_count: 2 },
+  { id: 10, name: 'Juliana Moreira Cardoso', email: 'juliana.m.cardoso@gmail.com', role: 'user', protected: false, created_at: '2026-10-21 17:33:02', created_ip: '201.48.163.89', last_access_at: '2026-11-11 10:05:40', last_ip: '201.48.163.89', calc_count: 2 },
+  { id: 11, name: 'Gabriel Teixeira Barros', email: 'gabriel.tbarros@gmail.com', role: 'user', protected: false, created_at: '2026-10-22 13:19:54', created_ip: '179.218.55.140', last_access_at: '2026-11-11 12:48:11', last_ip: '179.218.55.140', calc_count: 2 },
 ];
 
 const INITIAL_AUDIT_LOG = [
-  { id: 1, action: 'role_promote', actor_id: 1, actor_email: 'leolemes021@gmail.com', target_id: 5, target_email: 'diego.teste@nutre.test', ip: '189.40.10.20', detail: 'Promovido a administrador', created_at: '2026-10-22 17:05:00' },
-  { id: 2, action: 'login', actor_id: 1, actor_email: 'leolemes021@gmail.com', target_id: 1, target_email: 'leolemes021@gmail.com', ip: '189.40.10.20', detail: 'Entrada no app', created_at: '2026-10-22 18:40:00' },
-  { id: 3, action: 'register', actor_id: 11, actor_email: 'joao.teste@nutre.test', target_id: 11, target_email: 'joao.teste@nutre.test', ip: '189.49.73.29', detail: 'Conta criada', created_at: '2026-10-19 18:47:00' },
+  { id: 10, action: 'login', actor_id: 1, actor_email: 'leolemes021@gmail.com', target_id: 1, target_email: 'leolemes021@gmail.com', ip: '189.40.10.20', detail: 'Entrada no app', created_at: '2026-11-11 18:30:00' },
+  { id: 9, action: 'login', actor_id: 5, actor_email: 'lucas.cavalcanti98@gmail.com', target_id: 5, target_email: 'lucas.cavalcanti98@gmail.com', ip: '179.108.34.92', detail: 'Entrada no app', created_at: '2026-11-11 18:05:44' },
+  { id: 8, action: 'login', actor_id: 2, actor_email: 'mariana.ribeiro89@gmail.com', target_id: 2, target_email: 'mariana.ribeiro89@gmail.com', ip: '177.84.112.45', detail: 'Entrada no app', created_at: '2026-11-11 17:45:10' },
+  { id: 7, action: 'login', actor_id: 3, actor_email: 'ricardo.almeida.prado@gmail.com', target_id: 3, target_email: 'ricardo.almeida.prado@gmail.com', ip: '189.62.45.118', detail: 'Entrada no app', created_at: '2026-11-11 16:30:22' },
+  { id: 6, action: 'login', actor_id: 7, actor_email: 'thiago.nogueira.santos@gmail.com', target_id: 7, target_email: 'thiago.nogueira.santos@gmail.com', ip: '191.240.18.77', detail: 'Entrada no app', created_at: '2026-11-11 15:50:30' },
+  { id: 5, action: 'login', actor_id: 4, actor_email: 'camila.duarte.fer@gmail.com', target_id: 4, target_email: 'camila.duarte.fer@gmail.com', ip: '200.155.88.14', detail: 'Entrada no app', created_at: '2026-11-11 14:12:05' },
+  { id: 4, action: 'login', actor_id: 11, actor_email: 'gabriel.tbarros@gmail.com', target_id: 11, target_email: 'gabriel.tbarros@gmail.com', ip: '179.218.55.140', detail: 'Entrada no app', created_at: '2026-11-11 12:48:11' },
+  { id: 3, action: 'login', actor_id: 10, actor_email: 'juliana.m.cardoso@gmail.com', target_id: 10, target_email: 'juliana.m.cardoso@gmail.com', ip: '201.48.163.89', detail: 'Entrada no app', created_at: '2026-11-11 10:05:40' },
+  { id: 2, action: 'login', actor_id: 6, actor_email: 'helena.batista64@gmail.com', target_id: 6, target_email: 'helena.batista64@gmail.com', ip: '187.32.91.203', detail: 'Entrada no app', created_at: '2026-11-10 16:40:19' },
+  { id: 1, action: 'role_promote', actor_id: 1, actor_email: 'leolemes021@gmail.com', target_id: 7, target_email: 'thiago.nogueira.santos@gmail.com', ip: '189.40.10.20', detail: 'Promovido a administrador', created_at: '2026-11-02 11:20:00' },
 ];
 
 const getAdminUsers = () => {
